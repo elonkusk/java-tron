@@ -118,8 +118,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
    * for block in solidity Json-RPC
    */
   @Getter
-  private static final Map<String, BlockFilterAndResult> blockFilter2ResultSolidity =
-      new ConcurrentHashMap<>();
+  private static final Map<String, BlockFilterAndResult> blockFilter2ResultSolidity = new ConcurrentHashMap<>();
 
   public static final String HASH_REGEX = "(0x)?[a-zA-Z0-9]{64}$";
 
@@ -130,8 +129,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   private static final String JSON_ERROR = "invalid json request";
   private static final String BLOCK_NUM_ERROR = "invalid block number";
   private static final String TAG_NOT_SUPPORT_ERROR = "TAG [earliest | pending] not supported";
-  private static final String QUANTITY_NOT_SUPPORT_ERROR =
-      "QUANTITY not supported, just support TAG as latest";
+  private static final String QUANTITY_NOT_SUPPORT_ERROR = "QUANTITY not supported, just support TAG as latest";
 
   /**
    * thread pool of query section bloom store
@@ -223,6 +221,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
   @Override
   public String web3Sha3(String data) throws JsonRpcInvalidParamsException {
+    logger.info("[snipper] web3Sha3 => {}", data);
     byte[] input;
     try {
       input = ByteArray.fromHexString(data);
@@ -235,8 +234,8 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   }
 
   @Override
-  public String ethGetBlockTransactionCountByHash(String blockHash)
-      throws JsonRpcInvalidParamsException {
+  public String ethGetBlockTransactionCountByHash(String blockHash) throws JsonRpcInvalidParamsException {
+    logger.info("[snipper] ethGetBlockTransactionCountByHash => {}", blockHash);
     Block b = getBlockByJsonHash(blockHash);
     if (b == null) {
       return null;
@@ -247,8 +246,8 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   }
 
   @Override
-  public String ethGetBlockTransactionCountByNumber(String blockNumOrTag)
-      throws JsonRpcInvalidParamsException {
+  public String ethGetBlockTransactionCountByNumber(String blockNumOrTag) throws JsonRpcInvalidParamsException {
+    logger.info("[snipper] ethGetBlockTransactionCountByNumber => {}", blockNumOrTag);
     List<Transaction> list = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
     if (list == null) {
       return null;
@@ -301,6 +300,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
   @Override
   public String getNetVersion() throws JsonRpcInternalException {
+    logger.info("[snipper] getNetVersion ...");
     return ethChainId();
   }
 
@@ -388,16 +388,14 @@ public class TronJsonRpcImpl implements TronJsonRpc {
    * @param data Hash of the method signature and encoded parameters. for example:
    * getMethodSign(methodName(uint256,uint256)) || data1 || data2
    */
-  private String call(byte[] ownerAddressByte, byte[] contractAddressByte, long value,
-      byte[] data) {
+  private String call(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data) {
 
     TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
     Return.Builder retBuilder = Return.newBuilder();
     TransactionExtention trxExt;
 
     try {
-      callTriggerConstantContract(ownerAddressByte, contractAddressByte, value, data,
-          trxExtBuilder, retBuilder);
+      callTriggerConstantContract(ownerAddressByte, contractAddressByte, value, data, trxExtBuilder, retBuilder);
 
     } catch (ContractValidateException | VMIllegalException e) {
       retBuilder.setResult(false).setCode(response_code.CONTRACT_VALIDATE_ERROR)
@@ -509,7 +507,6 @@ public class TronJsonRpcImpl implements TronJsonRpc {
     return address;
   }
 
-  // return energy fee
   @Override
   public String gasPrice() {
     return ByteArray.toJsonHex(wallet.getEnergyFee());
@@ -1015,24 +1012,28 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   @Override
   public boolean ethSubmitWork(String nonceHex, String headerHex, String digestHex)
       throws JsonRpcMethodNotFoundException {
+    logger.info("[snipper] ethSendTransaction => nonceHex{} headerHex {} digestHex {}", nonceHex, headerHex, digestHex);
     throw new JsonRpcMethodNotFoundException(
         "the method eth_submitWork does not exist/is not available");
   }
 
   @Override
   public String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException {
+    logger.info("[snipper] ethSendRawTransaction => {}", rawData);
     throw new JsonRpcMethodNotFoundException(
         "the method eth_sendRawTransaction does not exist/is not available");
   }
 
   @Override
   public String ethSendTransaction(CallArguments args) throws JsonRpcMethodNotFoundException {
+    logger.info("[snipper] ethSendTransaction => {}", args);
     throw new JsonRpcMethodNotFoundException(
         "the method eth_sendTransaction does not exist/is not available");
   }
 
   @Override
   public String ethSign(String address, String msg) throws JsonRpcMethodNotFoundException {
+    logger.info("[snipper] ethSign => address {} msg {}", address, msg);
     throw new JsonRpcMethodNotFoundException(
         "the method eth_sign does not exist/is not available");
   }
@@ -1040,6 +1041,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   @Override
   public String ethSignTransaction(CallArguments transactionArgs)
       throws JsonRpcMethodNotFoundException {
+    logger.info("[snipper] ethSignTransaction => CallArguments {}", transactionArgs);
     throw new JsonRpcMethodNotFoundException(
         "the method eth_signTransaction does not exist/is not available");
   }
