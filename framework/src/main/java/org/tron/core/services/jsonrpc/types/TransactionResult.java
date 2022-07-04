@@ -1,5 +1,6 @@
 package org.tron.core.services.jsonrpc.types;
 
+import static org.tron.core.capsule.utils.TransactionUtil.getOwner;
 import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.getToAddress;
 import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.getTransactionAmount;
 
@@ -86,7 +87,7 @@ public class TransactionResult {
 
     if (!tx.getRawData().getContractList().isEmpty()) {
       Contract contract = tx.getRawData().getContract(0);
-      byte[] fromByte = TransactionCapsule.getOwner(contract);
+      byte[] fromByte = getOwner(contract);
       byte[] toByte = getToAddress(tx);
       from = ByteArray.toJsonHexAddress(fromByte);
       to = ByteArray.toJsonHexAddress(toByte);
@@ -114,7 +115,7 @@ public class TransactionResult {
 
     if (!tx.getRawData().getContractList().isEmpty()) {
       Contract contract = tx.getRawData().getContract(0);
-      byte[] fromByte = TransactionCapsule.getOwner(contract);
+      byte[] fromByte = getOwner(contract);
       byte[] toByte = getToAddress(tx);
       from = ByteArray.toJsonHexAddress(fromByte);
       to = ByteArray.toJsonHexAddress(toByte);

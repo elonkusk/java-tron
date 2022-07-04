@@ -1,5 +1,6 @@
 package org.tron.core.db;
 
+import static org.tron.core.capsule.utils.TransactionUtil.getOwner;
 import static org.tron.core.config.Parameter.ChainConstant.TRX_PRECISION;
 import static org.tron.protos.Protocol.Transaction.Contract.ContractType.ShieldedTransferContract;
 import static org.tron.protos.Protocol.Transaction.Contract.ContractType.TransferAssetContract;
@@ -114,7 +115,7 @@ public class BandwidthProcessor extends ResourceProcessor {
 
       logger.debug("trxId {}, bandwidth cost: {}", trx.getTransactionId(), bytesSize);
       trace.setNetBill(bytesSize, 0);
-      byte[] address = TransactionCapsule.getOwner(contract);
+      byte[] address = getOwner(contract);
       AccountCapsule accountCapsule = chainBaseManager.getAccountStore().get(address);
       if (accountCapsule == null) {
         throw new ContractValidateException("account does not exist");

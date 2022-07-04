@@ -10,6 +10,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -81,8 +82,7 @@ public class JsonRpcApiUtil {
     return Hex.toHexString(selector);
   }
 
-  public static TriggerSmartContract triggerCallContract(byte[] address, byte[] contractAddress,
-      long callValue, byte[] data, long tokenValue, String tokenId) {
+  public static TriggerSmartContract triggerCallContract(byte[] address, byte[] contractAddress, long callValue, byte[] data, long tokenValue, String tokenId) {
     TriggerSmartContract.Builder builder = TriggerSmartContract.newBuilder();
 
     builder.setOwnerAddress(ByteString.copyFrom(address));

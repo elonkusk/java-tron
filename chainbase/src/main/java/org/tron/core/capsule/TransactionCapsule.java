@@ -15,26 +15,8 @@
 
 package org.tron.core.capsule;
 
-import static org.tron.common.utils.StringUtil.encode58Check;
-import static org.tron.common.utils.WalletUtil.checkPermissionOperations;
-import static org.tron.core.exception.P2pException.TypeEnum.PROTOBUF_ERROR;
-
 import com.google.common.primitives.Bytes;
-import com.google.protobuf.Any;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.Internal;
-import com.google.protobuf.InvalidProtocolBufferException;
-import java.io.IOException;
-import java.security.SignatureException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.google.protobuf.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,17 +27,11 @@ import org.tron.common.crypto.SignUtils;
 import org.tron.common.overlay.message.Message;
 import org.tron.common.parameter.CommonParameter;
 import org.tron.common.utils.ByteArray;
-import org.tron.common.utils.ReflectUtils;
 import org.tron.common.utils.Sha256Hash;
 import org.tron.core.actuator.TransactionFactory;
 import org.tron.core.db.TransactionContext;
 import org.tron.core.db.TransactionTrace;
-import org.tron.core.exception.BadItemException;
-import org.tron.core.exception.ContractValidateException;
-import org.tron.core.exception.P2pException;
-import org.tron.core.exception.PermissionException;
-import org.tron.core.exception.SignatureFormatException;
-import org.tron.core.exception.ValidateSignatureException;
+import org.tron.core.exception.*;
 import org.tron.core.store.AccountStore;
 import org.tron.core.store.DynamicPropertiesStore;
 import org.tron.protos.Protocol.Key;
@@ -80,13 +56,25 @@ import org.tron.protos.contract.WitnessContract.VoteWitnessContract;
 import org.tron.protos.contract.WitnessContract.WitnessCreateContract;
 import org.tron.protos.contract.WitnessContract.WitnessUpdateContract;
 
+import java.io.IOException;
+import java.security.SignatureException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.tron.common.utils.StringUtil.encode58Check;
+import static org.tron.common.utils.WalletUtil.checkPermissionOperations;
+import static org.tron.core.capsule.utils.TransactionUtil.getOwner;
+import static org.tron.core.exception.P2pException.TypeEnum.PROTOBUF_ERROR;
+
 @Slf4j(topic = "capsule")
 public class TransactionCapsule implements ProtoCapsule<Transaction> {
 
-  private static final ExecutorService executorService = Executors
-      .newFixedThreadPool(CommonParameter.getInstance()
-          .getValidContractProtoThreadNum());
-  private static final String OWNER_ADDRESS = "ownerAddress_";
+  private static final ExecutorService executorService = Executors.newFixedThreadPool(CommonParameter.getInstance().getValidContractProtoThreadNum());
 
   private Transaction transaction;
   @Setter
@@ -214,12 +202,10 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
             "Signature size is " + sig.size());
       }
       String base64 = TransactionCapsule.getBase64FromByteString(sig);
-      byte[] address = SignUtils
-          .signatureToAddress(hash, base64, CommonParameter.getInstance().isECKeyCryptoEngine());
+      byte[] address = SignUtils.signatureToAddress(hash, base64, CommonParameter.getInstance().isECKeyCryptoEngine());
       long weight = getWeight(permission, address);
       if (weight == 0) {
-        throw new PermissionException(
-            ByteArray.toHexString(sig.toByteArray()) + " is signed by " + encode58Check(address)
+        throw new PermissionException(ByteArray.toHexString(sig.toByteArray()) + " is signed by " + encode58Check(address)
                 + " but it is not contained of permission.");
       }
       if (addMap.containsKey(base64)) {
@@ -238,8 +224,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   //No exception will be thrown here
   public static byte[] getShieldTransactionHashIgnoreTypeException(Transaction tx) {
     try {
-      return hashShieldTransaction(tx, CommonParameter.getInstance()
-          .getZenTokenId());
+      return hashShieldTransaction(tx, CommonParameter.getInstance().getZenTokenId());
     } catch (ContractValidateException | InvalidProtocolBufferException e) {
       logger.debug(e.getMessage(), e);
     }
@@ -250,14 +235,12 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
       throws ContractValidateException, InvalidProtocolBufferException {
     Any contractParameter = tx.getRawData().getContract(0).getParameter();
     if (!contractParameter.is(ShieldedTransferContract.class)) {
-      throw new ContractValidateException(
-          "contract type error,expected type [ShieldedTransferContract],real type["
+      throw new ContractValidateException("contract type error,expected type [ShieldedTransferContract],real type["
               + contractParameter
               .getClass() + "]");
     }
 
-    ShieldedTransferContract shieldedTransferContract = contractParameter
-        .unpack(ShieldedTransferContract.class);
+    ShieldedTransferContract shieldedTransferContract = contractParameter.unpack(ShieldedTransferContract.class);
     ShieldedTransferContract.Builder newContract = ShieldedTransferContract.newBuilder();
     newContract.setFromAmount(shieldedTransferContract.getFromAmount());
     newContract.addAllReceiveDescription(shieldedTransferContract.getReceiveDescriptionList());
@@ -265,67 +248,21 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
     newContract.setTransparentFromAddress(shieldedTransferContract.getTransparentFromAddress());
     newContract.setTransparentToAddress(shieldedTransferContract.getTransparentToAddress());
     for (SpendDescription spendDescription : shieldedTransferContract.getSpendDescriptionList()) {
-      newContract
-          .addSpendDescription(spendDescription.toBuilder().clearSpendAuthoritySignature().build());
+      newContract.addSpendDescription(spendDescription.toBuilder().clearSpendAuthoritySignature().build());
     }
 
     Transaction.raw.Builder rawBuilder = tx.toBuilder()
         .getRawDataBuilder()
         .clearContract()
-        .addContract(
-            Transaction.Contract.newBuilder().setType(ContractType.ShieldedTransferContract)
-                .setParameter(
-                    Any.pack(newContract.build())).build());
+        .addContract(Transaction.Contract.newBuilder().setType(ContractType.ShieldedTransferContract)
+                .setParameter(Any.pack(newContract.build())).build());
 
-    Transaction transaction = tx.toBuilder().clearRawData()
-        .setRawData(rawBuilder).build();
+    Transaction transaction = tx.toBuilder().clearRawData().setRawData(rawBuilder).build();
 
-    byte[] mergedByte = Bytes.concat(Sha256Hash
-            .of(CommonParameter.getInstance().isECKeyCryptoEngine(), tokenId.getBytes()).getBytes(),
-        transaction.getRawData().toByteArray());
-    return Sha256Hash.of(CommonParameter
-        .getInstance().isECKeyCryptoEngine(), mergedByte).getBytes();
+    byte[] mergedByte = Bytes.concat(Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(), tokenId.getBytes()).getBytes(), transaction.getRawData().toByteArray());
+    return Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(), mergedByte).getBytes();
   }
 
-  // todo mv this static function to capsule util
-  public static byte[] getOwner(Transaction.Contract contract) {
-    ByteString owner;
-    try {
-      Any contractParameter = contract.getParameter();
-      switch (contract.getType()) {
-        case ShieldedTransferContract: {
-          ShieldedTransferContract shieldedTransferContract = contractParameter
-              .unpack(ShieldedTransferContract.class);
-          if (!shieldedTransferContract.getTransparentFromAddress().isEmpty()) {
-            owner = shieldedTransferContract.getTransparentFromAddress();
-          } else {
-            return new byte[0];
-          }
-          break;
-        }
-        // todo add other contract
-        default: {
-          Class<? extends GeneratedMessageV3> clazz = TransactionFactory
-              .getContract(contract.getType());
-          if (clazz == null) {
-            logger.error("not exist {}", contract.getType());
-            return new byte[0];
-          }
-          GeneratedMessageV3 generatedMessageV3 = contractParameter.unpack(clazz);
-          owner = ReflectUtils.getFieldValue(generatedMessageV3, OWNER_ADDRESS);
-          if (owner == null) {
-            logger.error("not exist [{}] field,{}", OWNER_ADDRESS, clazz);
-            return new byte[0];
-          }
-          break;
-        }
-      }
-      return owner.toByteArray();
-    } catch (Exception ex) {
-      logger.error(ex.getMessage());
-      return new byte[0];
-    }
-  }
 
   public static <T extends com.google.protobuf.Message> T parse(Class<T> clazz,
       CodedInputStream codedInputStream) throws InvalidProtocolBufferException {
@@ -445,8 +382,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
         permission = AccountCapsule.getDefaultPermission(ByteString.copyFrom(owner));
       }
       if (permissionId == 2) {
-        permission = AccountCapsule
-            .createDefaultActivePermission(ByteString.copyFrom(owner), dynamicPropertiesStore);
+        permission = AccountCapsule.createDefaultActivePermission(ByteString.copyFrom(owner), dynamicPropertiesStore);
       }
     } else {
       permission = account.getPermissionById(permissionId);
@@ -515,9 +451,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
 
   @Deprecated
   public void createTransaction(com.google.protobuf.Message message, ContractType contractType) {
-    Transaction.raw.Builder transactionBuilder = Transaction.raw.newBuilder().addContract(
-        Transaction.Contract.newBuilder().setType(contractType).setParameter(
-            Any.pack(message)).build());
+    Transaction.raw.Builder transactionBuilder = Transaction.raw.newBuilder().addContract(Transaction.Contract.newBuilder().setType(contractType).setParameter(Any.pack(message)).build());
     transaction = Transaction.newBuilder().setRawData(transactionBuilder.build()).build();
   }
 
@@ -686,8 +620,8 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
       getInstance().getRawData().getContractList().forEach(contract -> {
         toStringBuff.append("[" + i + "] ").append("type: ").append(contract.getType())
             .append("\n");
-        toStringBuff.append("from address=").append(getOwner(contract)).append("\n");
-        toStringBuff.append("to address=").append(getToAddress(contract)).append("\n");
+        toStringBuff.append("from address=").append(ByteArray.toJsonHex(getOwner(contract))).append("\n");
+        toStringBuff.append("to address=").append(ByteArray.toJsonHex(getToAddress(contract))).append("\n");
         if (contract.getType().equals(ContractType.TransferContract)) {
           TransferContract transferContract;
           try {

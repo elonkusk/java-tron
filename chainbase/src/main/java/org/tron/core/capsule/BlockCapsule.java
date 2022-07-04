@@ -109,7 +109,7 @@ public class BlockCapsule implements ProtoCapsule<Block> {
 
     // block
     Block.Builder blockBuild = Block.newBuilder();
-    transactionList.forEach(trx -> blockBuild.addTransactions(trx));
+    transactionList.forEach(blockBuild::addTransactions);
     this.block = blockBuild.setBlockHeader(blockHeader).build();
     initTxs();
   }
@@ -197,9 +197,7 @@ public class BlockCapsule implements ProtoCapsule<Block> {
 
   public BlockId getBlockId() {
     if (blockId.equals(Sha256Hash.ZERO_HASH)) {
-      blockId =
-          new BlockId(Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(),
-              this.block.getBlockHeader().getRawData().toByteArray()), getNum());
+      blockId = new BlockId(Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(), this.block.getBlockHeader().getRawData().toByteArray()), getNum());
     }
     return blockId;
   }
@@ -220,31 +218,22 @@ public class BlockCapsule implements ProtoCapsule<Block> {
   }
 
   public void setMerkleRoot() {
-    BlockHeader.raw blockHeaderRaw =
-        this.block.getBlockHeader().getRawData().toBuilder()
-            .setTxTrieRoot(calcMerkleRoot().getByteString()).build();
+    BlockHeader.raw blockHeaderRaw = this.block.getBlockHeader().getRawData().toBuilder().setTxTrieRoot(calcMerkleRoot().getByteString()).build();
 
-    this.block = this.block.toBuilder().setBlockHeader(
-        this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
+    this.block = this.block.toBuilder().setBlockHeader(this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
   }
 
   public void setAccountStateRoot(byte[] root) {
-    BlockHeader.raw blockHeaderRaw =
-        this.block.getBlockHeader().getRawData().toBuilder()
-            .setAccountStateRoot(ByteString.copyFrom(root)).build();
+    BlockHeader.raw blockHeaderRaw = this.block.getBlockHeader().getRawData().toBuilder().setAccountStateRoot(ByteString.copyFrom(root)).build();
 
-    this.block = this.block.toBuilder().setBlockHeader(
-        this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
+    this.block = this.block.toBuilder().setBlockHeader(this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
   }
 
   /* only for genesis */
   public void setWitness(String witness) {
-    BlockHeader.raw blockHeaderRaw =
-        this.block.getBlockHeader().getRawData().toBuilder().setWitnessAddress(
-            ByteString.copyFrom(witness.getBytes())).build();
+    BlockHeader.raw blockHeaderRaw = this.block.getBlockHeader().getRawData().toBuilder().setWitnessAddress(ByteString.copyFrom(witness.getBytes())).build();
 
-    this.block = this.block.toBuilder().setBlockHeader(
-        this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
+    this.block = this.block.toBuilder().setBlockHeader(this.block.getBlockHeader().toBuilder().setRawData(blockHeaderRaw)).build();
   }
 
   public Sha256Hash getMerkleRoot() {

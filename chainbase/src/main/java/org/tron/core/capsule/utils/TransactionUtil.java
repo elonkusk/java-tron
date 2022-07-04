@@ -15,10 +15,13 @@
 
 package org.tron.core.capsule.utils;
 
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import com.google.protobuf.GeneratedMessageV3;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +30,8 @@ import org.tron.common.runtime.InternalTransaction;
 import org.tron.common.runtime.ProgramResult;
 import org.tron.common.runtime.vm.LogInfo;
 import org.tron.common.utils.DecodeUtil;
+import org.tron.common.utils.ReflectUtils;
+import org.tron.core.actuator.TransactionFactory;
 import org.tron.core.capsule.BlockCapsule;
 import org.tron.core.capsule.ReceiptCapsule;
 import org.tron.core.capsule.TransactionCapsule;
@@ -39,9 +44,11 @@ import org.tron.protos.Protocol.TransactionInfo;
 import org.tron.protos.Protocol.TransactionInfo.Log;
 import org.tron.protos.Protocol.TransactionInfo.code;
 import org.tron.protos.contract.BalanceContract.TransferContract;
+import org.tron.protos.contract.ShieldContract;
 
 @Slf4j(topic = "capsule")
 public class TransactionUtil {
+  private static final String OWNER_ADDRESS = "ownerAddress_";
 
   public static Transaction newGenesisTransaction(byte[] key, long value)
       throws IllegalArgumentException {
@@ -171,5 +178,43 @@ public class TransactionUtil {
     }
 
     return !(id.length > 1 && id[0] == '0');
+  }
+
+  // todo mv this static function to capsule util
+  public static byte[] getOwner(Transaction.Contract contract) {
+    ByteString owner;
+    try {
+      Any contractParameter = contract.getParameter();
+      switch (contract.getType()) {
+        case ShieldedTransferContract: {
+          ShieldContract.ShieldedTransferContract shieldedTransferContract = contractParameter.unpack(ShieldContract.ShieldedTransferContract.class);
+          if (!shieldedTransferContract.getTransparentFromAddress().isEmpty()) {
+            owner = shieldedTransferContract.getTransparentFromAddress();
+          } else {
+            return new byte[0];
+          }
+          break;
+        }
+        // todo add other contract
+        default: {
+          Class<? extends GeneratedMessageV3> clazz = TransactionFactory.getContract(contract.getType());
+          if (clazz == null) {
+            logger.error("not exist {}", contract.getType());
+            return new byte[0];
+          }
+          GeneratedMessageV3 generatedMessageV3 = contractParameter.unpack(clazz);
+          owner = ReflectUtils.getFieldValue(generatedMessageV3, OWNER_ADDRESS);
+          if (owner == null) {
+            logger.error("not exist [{}] field,{}", OWNER_ADDRESS, clazz);
+            return new byte[0];
+          }
+          break;
+        }
+      }
+      return owner.toByteArray();
+    } catch (Exception ex) {
+      logger.error(ex.getMessage());
+      return new byte[0];
+    }
   }
 }

@@ -450,11 +450,9 @@ public class Wallet {
     return createTransactionCapsuleWithoutValidateWithTimeout(message, contractType, 0);
   }
 
-  public TransactionCapsule createTransactionCapsule(com.google.protobuf.Message message,
-      ContractType contractType) throws ContractValidateException {
+  public TransactionCapsule createTransactionCapsule(com.google.protobuf.Message message, ContractType contractType) throws ContractValidateException {
     TransactionCapsule trx = new TransactionCapsule(message, contractType);
-    if (contractType != ContractType.CreateSmartContract
-        && contractType != ContractType.TriggerSmartContract) {
+    if (contractType != ContractType.CreateSmartContract && contractType != ContractType.TriggerSmartContract) {
       List<Actuator> actList = ActuatorFactory.createActuator(trx, chainBaseManager);
       for (Actuator act : actList) {
         act.validate();
@@ -462,9 +460,7 @@ public class Wallet {
     }
 
     if (contractType == ContractType.CreateSmartContract) {
-
-      CreateSmartContract contract = ContractCapsule
-          .getSmartContractFromTransaction(trx.getInstance());
+      CreateSmartContract contract = ContractCapsule.getSmartContractFromTransaction(trx.getInstance());
       long percent = contract.getNewContract().getConsumeUserResourcePercent();
       if (percent < 0 || percent > 100) {
         throw new ContractValidateException("percent must be >= 0 and <= 100");
@@ -601,7 +597,7 @@ public class Wallet {
     } else {
       try {
         Contract contract = trx.getRawData().getContract(0);
-        byte[] owner = TransactionCapsule.getOwner(contract);
+        byte[] owner = TransactionUtil.getOwner(contract);
         AccountCapsule account = chainBaseManager.getAccountStore().get(owner);
         if (account == null) {
           throw new PermissionException("Account does not exist!");
@@ -665,7 +661,7 @@ public class Wallet {
     try {
       return chainBaseManager.getBlockByNum(blockNum).getInstance();
     } catch (StoreException e) {
-      logger.info(e.getMessage());
+      logger.error(e);
       return null;
     }
   }
@@ -674,7 +670,7 @@ public class Wallet {
     try {
       return chainBaseManager.getBlockByNum(blockNum);
     } catch (StoreException e) {
-      logger.info(e.getMessage());
+      logger.error(e);
       return null;
     }
   }
@@ -686,7 +682,7 @@ public class Wallet {
       Block block = chainBaseManager.getBlockByNum(blockNum).getInstance();
       count = block.getTransactionsCount();
     } catch (StoreException e) {
-      logger.error(e.getMessage());
+      logger.error(e);
     }
 
     return count;
@@ -711,30 +707,27 @@ public class Wallet {
     }
   }
 
-  public List<Transaction> getTransactionsByJsonBlockId(String id)
-      throws JsonRpcInvalidParamsException {
+  public List<Transaction> getTransactionsByJsonBlockId(String id) throws JsonRpcInvalidParamsException {
     if ("pending".equalsIgnoreCase(id)) {
-      throw new JsonRpcInvalidParamsException("TAG pending not supported");
-    } else {
-      Block block = getByJsonBlockId(id);
-      return block != null ? block.getTransactionsList() : null;
+      id = "latest";
+//      throw new JsonRpcInvalidParamsException("TAG pending not supported");
     }
+    Block block = getByJsonBlockId(id);
+    return block != null ? block.getTransactionsList() : null;
+
   }
 
   public WitnessList getWitnessList() {
     WitnessList.Builder builder = WitnessList.newBuilder();
     List<WitnessCapsule> witnessCapsuleList = chainBaseManager.getWitnessStore().getAllWitnesses();
-    witnessCapsuleList
-        .forEach(witnessCapsule -> builder.addWitnesses(witnessCapsule.getInstance()));
+    witnessCapsuleList.forEach(witnessCapsule -> builder.addWitnesses(witnessCapsule.getInstance()));
     return builder.build();
   }
 
   public ProposalList getProposalList() {
     ProposalList.Builder builder = ProposalList.newBuilder();
-    List<ProposalCapsule> proposalCapsuleList =
-        chainBaseManager.getProposalStore().getAllProposals();
-    proposalCapsuleList
-        .forEach(proposalCapsule -> builder.addProposals(proposalCapsule.getInstance()));
+    List<ProposalCapsule> proposalCapsuleList = chainBaseManager.getProposalStore().getAllProposals();
+    proposalCapsuleList.forEach(proposalCapsule -> builder.addProposals(proposalCapsule.getInstance()));
     return builder.build();
   }
 
@@ -2637,9 +2630,7 @@ public class Wallet {
     }
   }
 
-  public Transaction triggerConstantContract(TriggerSmartContract triggerSmartContract,
-      TransactionCapsule trxCap, Builder builder, Return.Builder retBuilder)
-      throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
+  public Transaction triggerConstantContract(TriggerSmartContract triggerSmartContract, TransactionCapsule trxCap, Builder builder, Return.Builder retBuilder) throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
 
     if (triggerSmartContract.getContractAddress().isEmpty()) { // deploy contract
       CreateSmartContract.Builder deployBuilder = CreateSmartContract.newBuilder();

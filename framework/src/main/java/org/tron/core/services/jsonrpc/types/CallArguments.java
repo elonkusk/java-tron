@@ -48,8 +48,7 @@ public class CallArguments {
   /**
    * just support TransferContract, CreateSmartContract and TriggerSmartContract
    * */
-  public ContractType getContractType(Wallet wallet) throws JsonRpcInvalidRequestException,
-      JsonRpcInvalidParamsException {
+  public ContractType getContractType(Wallet wallet) throws JsonRpcInvalidRequestException, JsonRpcInvalidParamsException {
     ContractType contractType;
 
     // from or to is null

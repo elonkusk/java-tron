@@ -16,6 +16,7 @@
 package org.tron.core.utils;
 
 import static org.tron.common.crypto.Hash.sha3omit12;
+import static org.tron.core.capsule.utils.TransactionUtil.getOwner;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.primitives.Longs;
@@ -25,6 +26,8 @@ import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import com.google.protobuf.GeneratedMessageV3;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +38,10 @@ import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.api.GrpcAPI.TransactionSignWeight;
 import org.tron.api.GrpcAPI.TransactionSignWeight.Result;
 import org.tron.common.parameter.CommonParameter;
+import org.tron.common.utils.ReflectUtils;
 import org.tron.common.utils.Sha256Hash;
 import org.tron.core.ChainBaseManager;
+import org.tron.core.actuator.TransactionFactory;
 import org.tron.core.capsule.AccountCapsule;
 import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.exception.PermissionException;
@@ -47,13 +52,13 @@ import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract;
 import org.tron.protos.Protocol.Transaction.Result.contractResult;
 import org.tron.protos.Protocol.TransactionSign;
+import org.tron.protos.contract.ShieldContract;
 import org.tron.protos.contract.SmartContractOuterClass.CreateSmartContract;
 import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
 
 @Slf4j(topic = "capsule")
 @Component
 public class TransactionUtil {
-
   private static final int MAX_ACCOUNT_NAME_LEN = 200;
   private static final int MAX_ACCOUNT_ID_LEN = 32;
   private static final int MIN_ACCOUNT_ID_LEN = 8;
@@ -212,7 +217,7 @@ public class TransactionUtil {
     } else {
       try {
         Contract contract = trx.getRawData().getContract(0);
-        byte[] owner = TransactionCapsule.getOwner(contract);
+        byte[] owner = getOwner(contract);
         AccountCapsule account = chainBaseManager.getAccountStore().get(owner);
         if (Objects.isNull(account)) {
           throw new PermissionException("Account does not exist!");
@@ -263,5 +268,6 @@ public class TransactionUtil {
     tswBuilder.setResult(resultBuilder);
     return tswBuilder.build();
   }
+
 
 }

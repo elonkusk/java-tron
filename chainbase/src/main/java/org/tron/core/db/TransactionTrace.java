@@ -2,6 +2,7 @@ package org.tron.core.db;
 
 import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CALL_TYPE;
 import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CREATION_TYPE;
+import static org.tron.core.capsule.utils.TransactionUtil.getOwner;
 
 import java.util.Objects;
 import lombok.Getter;
@@ -224,7 +225,7 @@ public class TransactionTrace {
     long originEnergyLimit = 0;
     switch (trxType) {
       case TRX_CONTRACT_CREATION_TYPE:
-        callerAccount = TransactionCapsule.getOwner(trx.getInstance().getRawData().getContract(0));
+        callerAccount = getOwner(trx.getInstance().getRawData().getContract(0));
         originAccount = callerAccount;
         break;
       case TRX_CONTRACT_CALL_TYPE:
