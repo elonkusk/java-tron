@@ -696,7 +696,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
   @Override
   public String getCall(CallArguments transactionCall, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getCall ===> {}", transactionCall, blockNumOrTag);
+    logger.info("[sniper] getCall ===> {}-{}", transactionCall, blockNumOrTag);
 
     if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
         || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
