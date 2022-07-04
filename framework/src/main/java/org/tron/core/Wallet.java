@@ -643,8 +643,7 @@ public class Wallet {
 
   public byte[] createAddress(byte[] passPhrase) {
     byte[] privateKey = pass2Key(passPhrase);
-    SignInterface ecKey = SignUtils.fromPrivate(privateKey,
-        Args.getInstance().isECKeyCryptoEngine());
+    SignInterface ecKey = SignUtils.fromPrivate(privateKey, Args.getInstance().isECKeyCryptoEngine());
     return ecKey.getAddress();
   }
 
@@ -661,7 +660,7 @@ public class Wallet {
     try {
       return chainBaseManager.getBlockByNum(blockNum).getInstance();
     } catch (StoreException e) {
-      logger.error(e);
+      logger.error("{}", e.getMessage(), e);
       return null;
     }
   }
@@ -670,7 +669,7 @@ public class Wallet {
     try {
       return chainBaseManager.getBlockByNum(blockNum);
     } catch (StoreException e) {
-      logger.error(e);
+      logger.error("{}", e.getMessage(), e);
       return null;
     }
   }
@@ -682,7 +681,7 @@ public class Wallet {
       Block block = chainBaseManager.getBlockByNum(blockNum).getInstance();
       count = block.getTransactionsCount();
     } catch (StoreException e) {
-      logger.error(e);
+      logger.error("{}", e.getMessage(), e);
     }
 
     return count;
