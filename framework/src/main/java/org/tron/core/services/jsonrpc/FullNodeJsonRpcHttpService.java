@@ -43,6 +43,8 @@ public class FullNodeJsonRpcHttpService implements Service {
       server.setHandler(context);
 
       context.addServlet(new ServletHolder(jsonRpcServlet), "/jsonrpc");
+      context.addServlet(new ServletHolder(jsonRpcServlet), "/");
+
 
       int maxHttpConnectNumber = CommonParameter.getInstance().getMaxHttpConnectNumber();
       if (maxHttpConnectNumber > 0) {
@@ -51,9 +53,7 @@ public class FullNodeJsonRpcHttpService implements Service {
 
       // filter
       ServletHandler handler = new ServletHandler();
-      FilterHolder fh = handler
-          .addFilterWithMapping(HttpInterceptor.class, "/*",
-              EnumSet.of(DispatcherType.REQUEST));
+      FilterHolder fh = handler.addFilterWithMapping(HttpInterceptor.class, "/*", EnumSet.of(DispatcherType.REQUEST));
       context.addFilter(fh, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       server.start();

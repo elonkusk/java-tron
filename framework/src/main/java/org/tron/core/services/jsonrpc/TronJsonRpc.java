@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.tron.common.runtime.vm.DataWord;
 import org.tron.common.utils.ByteArray;
@@ -209,11 +210,29 @@ public interface TronJsonRpc {
   })
   String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException;
 
+  @JsonRpcMethod("eth_send_raw_transaction")
+  @JsonRpcErrors({
+          @JsonRpcError(exception = JsonRpcMethodNotFoundException.class, code = -32601, data = "{}"),
+  })
+  default String ethSendRawTransactionV2(String rawData) throws JsonRpcMethodNotFoundException{
+    System.out.println("RPC eth_send_raw_transaction ...");
+    return ethSendRawTransaction( rawData);
+  }
+
   @JsonRpcMethod("eth_sendTransaction")
   @JsonRpcErrors({
       @JsonRpcError(exception = JsonRpcMethodNotFoundException.class, code = -32601, data = "{}"),
   })
   String ethSendTransaction(CallArguments transactionArgs) throws JsonRpcMethodNotFoundException;
+
+  @JsonRpcMethod("eth_send_transaction")
+  @JsonRpcErrors({
+          @JsonRpcError(exception = JsonRpcMethodNotFoundException.class, code = -32601, data = "{}"),
+  })
+  default String ethSendTransactionV2(CallArguments transactionArgs) throws JsonRpcMethodNotFoundException{
+    System.out.println("RPC eth_send_raw_transaction ...");
+    return ethSendTransaction(transactionArgs);
+  }
 
   @JsonRpcMethod("eth_sign")
   @JsonRpcErrors({

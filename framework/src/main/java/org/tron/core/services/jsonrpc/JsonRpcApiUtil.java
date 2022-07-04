@@ -355,13 +355,11 @@ public class JsonRpcApiUtil {
    * convert 40 or 42 hex string of address to byte array, compatible with "41"(T) ahead,
    * padding 0 ahead if length is odd.
    */
-  public static byte[] addressCompatibleToByteArray(String hexAddress)
-      throws JsonRpcInvalidParamsException {
+  public static byte[] addressCompatibleToByteArray(String hexAddress) throws JsonRpcInvalidParamsException {
     byte[] addressByte;
     try {
       addressByte = ByteArray.fromHexString(hexAddress);
-      if (addressByte.length != DecodeUtil.ADDRESS_SIZE / 2
-          && addressByte.length != DecodeUtil.ADDRESS_SIZE / 2 - 1) {
+      if (addressByte.length != DecodeUtil.ADDRESS_SIZE / 2 && addressByte.length != DecodeUtil.ADDRESS_SIZE / 2 - 1) {
         throw new JsonRpcInvalidParamsException("invalid address hash value");
       }
 

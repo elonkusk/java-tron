@@ -163,21 +163,21 @@ public class Base58 {
    */
 
   public static byte[] decodeFromBase58Check(String addressBase58) {
-    if (addressBase58 == null || addressBase58.length() == 0) {
-      System.out.println("Warning: Address is empty !!");
-      return null;
-    }
-    if (addressBase58.length() != BASE58CHECK_ADDRESS_SIZE) {
-      System.out.println(
-          "Warning: Base58 address length need " + BASE58CHECK_ADDRESS_SIZE + " but "
-              + addressBase58.length()
-              + " !!");
-      return null;
-    }
+//    if (addressBase58 == null || addressBase58.length() == 0) {
+//      System.out.println("Warning: Address is empty !!");
+//      return null;
+//    }
+//    if (addressBase58.length() != BASE58CHECK_ADDRESS_SIZE) {
+//      System.out.println(
+//          "Warning: Base58 address length need " + BASE58CHECK_ADDRESS_SIZE + " but "
+//              + addressBase58.length()
+//              + " !!");
+//      return null;
+//    }
     byte[] address = Commons.decode58Check(addressBase58);
-    if (!addressValid(address)) {
-      return null;
-    }
+//    if (!addressValid(address)) {
+//      return null;
+//    }
     return address;
   }
 

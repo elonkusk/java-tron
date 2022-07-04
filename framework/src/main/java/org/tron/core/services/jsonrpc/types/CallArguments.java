@@ -65,8 +65,7 @@ public class CallArguments {
     } else {
       byte[] contractAddressData = addressCompatibleToByteArray(to);
       BytesMessage.Builder build = BytesMessage.newBuilder();
-      BytesMessage bytesMessage =
-          build.setValue(ByteString.copyFrom(contractAddressData)).build();
+      BytesMessage bytesMessage = build.setValue(ByteString.copyFrom(contractAddressData)).build();
       SmartContract smartContract = wallet.getContract(bytesMessage);
 
       // check if to is smart contract
