@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.tron.common.parameter.CommonParameter;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Sha256Hash;
@@ -16,6 +17,7 @@ import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.TransactionInfo;
 
+@ToString
 @JsonPropertyOrder(alphabetic = true)
 public class BlockResult {
 
@@ -89,15 +91,12 @@ public class BlockResult {
 
     number = ByteArray.toJsonHex(blockCapsule.getNum());
     hash = ByteArray.toJsonHex(blockCapsule.getBlockId().getBytes());
-    parentHash =
-        ByteArray.toJsonHex(block.getBlockHeader().getRawData().getParentHash().toByteArray());
+    parentHash = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getParentHash().toByteArray());
     nonce = null; // no value
     sha3Uncles = null; // no value
     logsBloom = ByteArray.toJsonHex(new byte[256]); // no value
-    transactionsRoot = ByteArray
-        .toJsonHex(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray());
-    stateRoot = ByteArray
-        .toJsonHex(block.getBlockHeader().getRawData().getAccountStateRoot().toByteArray());
+    transactionsRoot = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray());
+    stateRoot = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getAccountStateRoot().toByteArray());
     receiptsRoot = null; // no value
     miner = ByteArray.toJsonHexAddress(blockCapsule.getWitnessAddress().toByteArray());
     difficulty = null; // no value
@@ -111,8 +110,7 @@ public class BlockResult {
 
     List<Object> txes = new ArrayList<>();
     List<Transaction> transactionsList = block.getTransactionsList();
-    List<TransactionInfo> transactionInfoList =
-        wallet.getTransactionInfoByBlockNum(blockCapsule.getNum()).getTransactionInfoList();
+    List<TransactionInfo> transactionInfoList = wallet.getTransactionInfoByBlockNum(blockCapsule.getNum()).getTransactionInfoList();
     if (fullTx) {
       long energyFee = wallet.getEnergyFee(blockCapsule.getTimeStamp());
 
@@ -123,24 +121,21 @@ public class BlockResult {
         long energyUsageTotal = getEnergyUsageTotal(transactionInfoList, i, blockCapsule.getNum());
         gasUsedInBlock += energyUsageTotal;
 
-        txes.add(new TransactionResult(blockCapsule, i, transaction,
-            energyUsageTotal, energyFee, wallet));
+        txes.add(new TransactionResult(blockCapsule, i, transaction, energyUsageTotal, energyFee, wallet));
       }
     } else {
       for (int i = 0; i < transactionsList.size(); i++) {
         gasLimitInBlock += transactionsList.get(i).getRawData().getFeeLimit();
         gasUsedInBlock += getEnergyUsageTotal(transactionInfoList, i, blockCapsule.getNum());
 
-        byte[] txHash = Sha256Hash
-            .hash(CommonParameter.getInstance().isECKeyCryptoEngine(),
-                transactionsList.get(i).getRawData().toByteArray());
+        byte[] txHash = Sha256Hash.hash(CommonParameter.getInstance().isECKeyCryptoEngine(), transactionsList.get(i).getRawData().toByteArray());
         txes.add(ByteArray.toJsonHex(txHash));
       }
     }
     transactions = txes.toArray();
 
-    gasLimit = ByteArray.toJsonHex(gasLimitInBlock);
-    gasUsed = ByteArray.toJsonHex(gasUsedInBlock);
+    gasLimit = ByteArray.toJsonHex(gasLimitInBlock == 0 ? 100 : gasLimitInBlock);
+    gasUsed = ByteArray.toJsonHex(gasUsedInBlock == 0 ? 100 : gasUsedInBlock);
     uncles = new String[0];
   }
 }

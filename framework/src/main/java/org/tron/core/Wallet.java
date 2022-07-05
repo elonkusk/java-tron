@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -257,6 +259,8 @@ public class Wallet {
   private TronNetService tronNetService;
   @Autowired
   private TronNetDelegate tronNetDelegate;
+
+  @Getter
   @Autowired
   private Manager dbManager;
   @Autowired
@@ -637,8 +641,7 @@ public class Wallet {
   }
 
   public byte[] pass2Key(byte[] passPhrase) {
-    return Sha256Hash.hash(CommonParameter
-        .getInstance().isECKeyCryptoEngine(), passPhrase);
+    return Sha256Hash.hash(CommonParameter.getInstance().isECKeyCryptoEngine(), passPhrase);
   }
 
   public byte[] createAddress(byte[] passPhrase) {
@@ -708,8 +711,9 @@ public class Wallet {
 
   public List<Transaction> getTransactionsByJsonBlockId(String id) throws JsonRpcInvalidParamsException {
     if ("pending".equalsIgnoreCase(id)) {
-      id = "latest";
-//      throw new JsonRpcInvalidParamsException("TAG pending not supported");
+      return dbManager.getPendingTransactions().stream()
+              .map(TransactionCapsule::getInstance)
+              .collect(Collectors.toList());
     }
     Block block = getByJsonBlockId(id);
     return block != null ? block.getTransactionsList() : null;

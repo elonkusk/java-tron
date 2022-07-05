@@ -449,19 +449,16 @@ public class VoteWitnessAccount2Test {
     }
 
     Block currentBlock = blockingStubFull.getNowBlock(GrpcAPI.EmptyMessage.newBuilder().build());
-    Block searchCurrentBlock = searchBlockingStubFull.getNowBlock(GrpcAPI
-        .EmptyMessage.newBuilder().build());
+    Block searchCurrentBlock = searchBlockingStubFull.getNowBlock(GrpcAPI.EmptyMessage.newBuilder().build());
     Integer wait = 0;
-    while (searchCurrentBlock.getBlockHeader().getRawData().getNumber()
-        < currentBlock.getBlockHeader().getRawData().getNumber() + 1 && wait < 30) {
+    while (searchCurrentBlock.getBlockHeader().getRawData().getNumber() < currentBlock.getBlockHeader().getRawData().getNumber() + 1 && wait < 30) {
       try {
         Thread.sleep(3000);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
       logger.info("Another fullnode didn't syn the first fullnode data");
-      searchCurrentBlock = searchBlockingStubFull.getNowBlock(GrpcAPI
-          .EmptyMessage.newBuilder().build());
+      searchCurrentBlock = searchBlockingStubFull.getNowBlock(GrpcAPI.EmptyMessage.newBuilder().build());
       wait++;
       if (wait == 9) {
         logger.info("Didn't syn,skip to next case.");

@@ -267,9 +267,10 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
   @Override
   public BlockResult ethGetBlockByNumber(String blockNumOrTag, Boolean fullTransactionObjects) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] ethGetBlockByNumber => {} - {}", blockNumOrTag, fullTransactionObjects);
     final Block b = wallet.getByJsonBlockId(blockNumOrTag);
-    return (b == null ? null : getBlockResult(b, fullTransactionObjects));
+    BlockResult result = (b == null ? null : getBlockResult(b, fullTransactionObjects));
+    logger.info("[sniper] ethGetBlockByNumber => {} - {} \n result: {}", blockNumOrTag, fullTransactionObjects, result);
+    return result;
   }
 
   private byte[] hashToByteArray(String hash) throws JsonRpcInvalidParamsException {
@@ -337,8 +338,9 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
   @Override
   public String getLatestBlockNum() {
-    logger.info("[sniper] getLatestBlockNum...");
-    return ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getNumber());
+    String block = ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getNumber());
+    logger.info("[sniper] getLatestBlockNum {}", block);
+    return block;
   }
 
   @Override
@@ -1041,18 +1043,19 @@ public class TronJsonRpcImpl implements TronJsonRpc {
     throw new JsonRpcMethodNotFoundException("the method parity_nextNonce does not exist/is not available");
   }
 
+  //@TODO
   @Override
   public String getSendTransactionCountOfAddress(String address, String blockNumOrTag) throws JsonRpcMethodNotFoundException, JsonRpcInvalidParamsException {
-    logger.info("[sniper] getSendTransactionCountOfAddress ==> {}-{}", address, blockNumOrTag);
     byte[] addressByte = addressCompatibleToByteArray(address);
     List<Transaction> transactions = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
-    long count = transactions.stream()
+    Long count = transactions.stream()
             .map(Transaction::getRawData)
             .map(Transaction.raw::getContractList)
             .flatMap(Collection::stream)
             .map(TransactionUtil::getOwner)
             .filter(owner -> Arrays.equals(owner,addressByte))
             .count();
+    logger.info("[sniper] getSendTransactionCountOfAddress ==> {}-{}-{}", address, blockNumOrTag, count);
     return ByteArray.toJsonHex(count);
   }
 
