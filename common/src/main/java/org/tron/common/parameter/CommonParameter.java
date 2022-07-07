@@ -75,6 +75,8 @@ public class CommonParameter {
   @Getter
   @Parameter(description = "--seed-nodes")
   public List<String> seedNodes = new ArrayList<>();
+
+  @Getter
   @Parameter(names = {"-p", "--private-key"}, description = "private-key")
   public String privateKey = "";
   @Parameter(names = {"--witness-address"}, description = "witness-address")

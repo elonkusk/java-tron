@@ -369,8 +369,7 @@ public class SM2 implements Serializable, SignInterface {
             (byte) (signatureEncoded[0] & 0xFF)));
   }
 
-  public static byte[] signatureToKeyBytes(byte[] messageHash,
-      SM2Signature sig) throws
+  public static byte[] signatureToKeyBytes(byte[] messageHash, SM2Signature sig) throws
       SignatureException {
     check(messageHash.length == 32, "messageHash argument has length " +
         messageHash.length);

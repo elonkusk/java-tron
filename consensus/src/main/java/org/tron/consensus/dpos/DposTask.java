@@ -102,20 +102,16 @@ public class DposTask {
       }
 
       long pTime = dposSlot.getTime(slot);
-      long timeout =
-          pTime + BLOCK_PRODUCED_INTERVAL / 2 * dposService.getBlockProduceTimeoutPercent() / 100;
+      long timeout = pTime + BLOCK_PRODUCED_INTERVAL / 2 * dposService.getBlockProduceTimeoutPercent() / 100;
       BlockCapsule blockCapsule = dposService.getBlockHandle().produce(miner, pTime, timeout);
       if (blockCapsule == null) {
         return State.PRODUCE_BLOCK_FAILED;
       }
 
       BlockHeader.raw raw = blockCapsule.getInstance().getBlockHeader().getRawData();
-      logger.info("Produce block successfully, num: {}, time: {}, witness: {}, ID:{}, parentID:{}",
-          raw.getNumber(),
-          new DateTime(raw.getTimestamp()),
-          ByteArray.toHexString(raw.getWitnessAddress().toByteArray()),
-          new Sha256Hash(raw.getNumber(), Sha256Hash.of(CommonParameter
-              .getInstance().isECKeyCryptoEngine(), raw.toByteArray())),
+      logger.info("Produce block successfully, num: {}, time: {}, witness: {}, ID:{}, parentID:{}", raw.getNumber(),
+          new DateTime(raw.getTimestamp()), ByteArray.toHexString(raw.getWitnessAddress().toByteArray()),
+          new Sha256Hash(raw.getNumber(), Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(), raw.toByteArray())),
           ByteArray.toHexString(raw.getParentHash().toByteArray()));
     }
 

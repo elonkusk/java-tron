@@ -167,8 +167,7 @@ public class TransactionUtil {
     return sha3omit12(combined);
   }
 
-  public static boolean checkPermissionOperations(Permission permission, Contract contract)
-      throws PermissionException {
+  public static boolean checkPermissionOperations(Permission permission, Contract contract) throws PermissionException {
     ByteString operations = permission.getOperations();
     if (operations.size() != 32) {
       throw new PermissionException("operations size must be 32");
@@ -179,8 +178,7 @@ public class TransactionUtil {
   }
 
   public static String makeUpperCamelMethod(String originName) {
-    return "get" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, originName)
-        .replace("_", "");
+    return "get" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, originName).replace("_", "");
   }
 
   public static TransactionCapsule getTransactionSign(TransactionSign transactionSign) {
@@ -190,8 +188,7 @@ public class TransactionUtil {
     return trx;
   }
 
-  public TransactionCapsule addSign(TransactionSign transactionSign)
-      throws PermissionException, SignatureException, SignatureFormatException {
+  public TransactionCapsule addSign(TransactionSign transactionSign) throws PermissionException, SignatureException, SignatureFormatException {
     byte[] privateKey = transactionSign.getPrivateKey().toByteArray();
     TransactionCapsule trx = new TransactionCapsule(transactionSign.getTransaction());
     trx.addSign(privateKey, chainBaseManager.getAccountStore());
@@ -202,8 +199,7 @@ public class TransactionUtil {
     TransactionSignWeight.Builder tswBuilder = TransactionSignWeight.newBuilder();
     TransactionExtention.Builder trxExBuilder = TransactionExtention.newBuilder();
     trxExBuilder.setTransaction(trx);
-    trxExBuilder.setTxid(ByteString.copyFrom(Sha256Hash.hash(CommonParameter
-        .getInstance().isECKeyCryptoEngine(), trx.getRawData().toByteArray())));
+    trxExBuilder.setTxid(ByteString.copyFrom(Sha256Hash.hash(CommonParameter.getInstance().isECKeyCryptoEngine(), trx.getRawData().toByteArray())));
     Return.Builder retBuilder = Return.newBuilder();
     retBuilder.setResult(true).setCode(response_code.SUCCESS);
     trxExBuilder.setResult(retBuilder);

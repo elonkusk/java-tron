@@ -25,8 +25,7 @@ public class BroadcastServlet extends RateLimiterServlet {
       PostParams params = PostParams.getPostParams(request);
       Transaction transaction = Util.packTransaction(params.getParams(), params.isVisible());
       TransactionCapsule transactionCapsule = new TransactionCapsule(transaction);
-      String transactionID = ByteArray
-          .toHexString(transactionCapsule.getTransactionId().getBytes());
+      String transactionID = ByteArray.toHexString(transactionCapsule.getTransactionId().getBytes());
       GrpcAPI.Return result = wallet.broadcastTransaction(transaction);
       JSONObject res = JSONObject.parseObject(JsonFormat.printToString(result, params.isVisible()));
       res.put("txid", transactionID);

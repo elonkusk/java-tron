@@ -355,8 +355,7 @@ public class Util {
     return ByteArray.toHexString(ByteString.copyFromUtf8(string).toByteArray());
   }
 
-  public static Transaction setTransactionPermissionId(JSONObject jsonObject,
-      Transaction transaction) {
+  public static Transaction setTransactionPermissionId(JSONObject jsonObject, Transaction transaction) {
     if (jsonObject.containsKey(PERMISSION_ID)) {
       int permissionId = jsonObject.getInteger(PERMISSION_ID);
       return setTransactionPermissionId(permissionId, transaction);
@@ -368,8 +367,7 @@ public class Util {
   public static Transaction setTransactionPermissionId(int permissionId, Transaction transaction) {
     if (permissionId > 0) {
       Transaction.raw.Builder raw = transaction.getRawData().toBuilder();
-      Transaction.Contract.Builder contract = raw.getContract(0).toBuilder()
-          .setPermissionId(permissionId);
+      Transaction.Contract.Builder contract = raw.getContract(0).toBuilder().setPermissionId(permissionId);
       raw.clearContract();
       raw.addContract(contract);
       return transaction.toBuilder().setRawData(raw).build();

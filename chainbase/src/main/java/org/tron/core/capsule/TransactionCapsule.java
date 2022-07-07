@@ -55,6 +55,7 @@ import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
 import org.tron.protos.contract.WitnessContract.VoteWitnessContract;
 import org.tron.protos.contract.WitnessContract.WitnessCreateContract;
 import org.tron.protos.contract.WitnessContract.WitnessUpdateContract;
+import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.security.SignatureException;
@@ -160,8 +161,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   }
 
   public TransactionCapsule(raw rawData, List<ByteString> signatureList) {
-    this.transaction = Transaction.newBuilder().setRawData(rawData).addAllSignature(signatureList)
-        .build();
+    this.transaction = Transaction.newBuilder().setRawData(rawData).addAllSignature(signatureList).build();
   }
 
   @Deprecated
@@ -186,27 +186,21 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
     return 0;
   }
 
-  public static long checkWeight(Permission permission, List<ByteString> sigs, byte[] hash,
-      List<ByteString> approveList)
+  public static long checkWeight(Permission permission, List<ByteString> sigs, byte[] hash, List<ByteString> approveList)
       throws SignatureException, PermissionException, SignatureFormatException {
     long currentWeight = 0;
     if (sigs.size() > permission.getKeysCount()) {
-      throw new PermissionException(
-          "Signature count is " + (sigs.size()) + " more than key counts of permission : "
-              + permission.getKeysCount());
+      throw new PermissionException("Signature count is " + (sigs.size()) + " more than key counts of permission : " + permission.getKeysCount());
     }
-    HashMap addMap = new HashMap();
+    HashMap<String, Long> addMap = new HashMap();
     for (ByteString sig : sigs) {
-      if (sig.size() < 65) {
-        throw new SignatureFormatException(
-            "Signature size is " + sig.size());
+      if (sig.size() < 65) {throw new SignatureFormatException("Signature size is " + sig.size());
       }
       String base64 = TransactionCapsule.getBase64FromByteString(sig);
       byte[] address = SignUtils.signatureToAddress(hash, base64, CommonParameter.getInstance().isECKeyCryptoEngine());
       long weight = getWeight(permission, address);
       if (weight == 0) {
-        throw new PermissionException(ByteArray.toHexString(sig.toByteArray()) + " is signed by " + encode58Check(address)
-                + " but it is not contained of permission.");
+        throw new PermissionException(ByteArray.toHexString(sig.toByteArray()) + " is signed by " + encode58Check(address) + " but it is not contained of permission.");
       }
       if (addMap.containsKey(base64)) {
         throw new PermissionException(encode58Check(address) + " has signed twice!");
@@ -345,10 +339,8 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
       switch (contract.getType()) {
         case TriggerSmartContract:
           return contractParameter.unpack(TriggerSmartContract.class).getCallValue();
-
         case CreateSmartContract:
-          return contractParameter.unpack(CreateSmartContract.class).getNewContract()
-              .getCallValue();
+          return contractParameter.unpack(CreateSmartContract.class).getNewContract().getCallValue();
         default:
           return 0L;
       }
@@ -369,9 +361,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
     return signature.toBase64();
   }
 
-  public static boolean validateSignature(Transaction transaction,
-      byte[] hash, AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore)
-      throws PermissionException, SignatureException, SignatureFormatException {
+  public static boolean validateSignature(Transaction transaction, byte[] hash, AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore) throws PermissionException, SignatureException, SignatureFormatException {
     Transaction.Contract contract = transaction.getRawData().getContractList().get(0);
     int permissionId = contract.getPermissionId();
     byte[] owner = getOwner(contract);
@@ -462,20 +452,16 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   }
 
   private Sha256Hash getRawHash() {
-    return Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(),
-        this.transaction.getRawData().toByteArray());
+    return Sha256Hash.of(CommonParameter.getInstance().isECKeyCryptoEngine(), this.transaction.getRawData().toByteArray());
   }
 
   public void sign(byte[] privateKey) {
-    SignInterface cryptoEngine = SignUtils
-        .fromPrivate(privateKey, CommonParameter.getInstance().isECKeyCryptoEngine());
-    ByteString sig = ByteString.copyFrom(cryptoEngine.Base64toBytes(cryptoEngine
-        .signHash(getRawHash().getBytes())));
+    SignInterface cryptoEngine = SignUtils.fromPrivate(privateKey, CommonParameter.getInstance().isECKeyCryptoEngine());
+    ByteString sig = ByteString.copyFrom(cryptoEngine.Base64toBytes(cryptoEngine.signHash(getRawHash().getBytes())));
     this.transaction = this.transaction.toBuilder().addSignature(sig).build();
   }
 
-  public void addSign(byte[] privateKey, AccountStore accountStore)
-      throws PermissionException, SignatureException, SignatureFormatException {
+  public void addSign(byte[] privateKey, AccountStore accountStore) throws PermissionException, SignatureException, SignatureFormatException {
     Transaction.Contract contract = this.transaction.getRawData().getContract(0);
     int permissionId = contract.getPermissionId();
     byte[] owner = getOwner(contract);
@@ -489,12 +475,10 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
     }
     checkPermission(permissionId, permission, contract);
     List<ByteString> approveList = new ArrayList<>();
-    SignInterface cryptoEngine = SignUtils
-        .fromPrivate(privateKey, CommonParameter.getInstance().isECKeyCryptoEngine());
+    SignInterface cryptoEngine = SignUtils.fromPrivate(privateKey, CommonParameter.getInstance().isECKeyCryptoEngine());
     byte[] address = cryptoEngine.getAddress();
     if (this.transaction.getSignatureCount() > 0) {
-      checkWeight(permission, this.transaction.getSignatureList(), this.getRawHash().getBytes(),
-          approveList);
+      checkWeight(permission, this.transaction.getSignatureList(), this.getRawHash().getBytes(), approveList);
       if (approveList.contains(ByteString.copyFrom(address))) {
         throw new PermissionException(encode58Check(address) + " had signed!");
       }
@@ -502,12 +486,9 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
 
     long weight = getWeight(permission, address);
     if (weight == 0) {
-      throw new PermissionException(
-          ByteArray.toHexString(privateKey) + "'s address is " + encode58Check(address)
-              + " but it is not contained of permission.");
+      throw new PermissionException(ByteArray.toHexString(privateKey) + "'s address is " + encode58Check(address) + " but it is not contained of permission.");
     }
-    ByteString sig = ByteString.copyFrom(cryptoEngine.Base64toBytes(cryptoEngine
-        .signHash(getRawHash().getBytes())));
+    ByteString sig = ByteString.copyFrom(cryptoEngine.Base64toBytes(cryptoEngine.signHash(getRawHash().getBytes())));
     this.transaction = this.transaction.toBuilder().addSignature(sig).build();
   }
   
@@ -526,16 +507,12 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   /**
    * validate signature
    */
-  public boolean validatePubSignature(AccountStore accountStore,
-      DynamicPropertiesStore dynamicPropertiesStore)
-      throws ValidateSignatureException {
+  public boolean validatePubSignature(AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore) throws ValidateSignatureException {
     if (!isVerified) {
-      if (this.transaction.getSignatureCount() <= 0
-              || this.transaction.getRawData().getContractCount() <= 0) {
+      if (this.transaction.getSignatureCount() <= 0 || this.transaction.getRawData().getContractCount() <= 0) {
         throw new ValidateSignatureException("miss sig or contract");
       }
-      if (this.transaction.getSignatureCount() > dynamicPropertiesStore
-              .getTotalSignNum()) {
+      if (this.transaction.getSignatureCount() > dynamicPropertiesStore.getTotalSignNum()) {
         throw new ValidateSignatureException("too many signatures");
       }
 
@@ -558,8 +535,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   /**
    * validate signature
    */
-  public boolean validateSignature(AccountStore accountStore,
-      DynamicPropertiesStore dynamicPropertiesStore) throws ValidateSignatureException {
+  public boolean validateSignature(AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore) throws ValidateSignatureException {
     if (!isVerified) {
       //Do not support multi contracts in one transaction
       Transaction.Contract contract = this.getInstance().getRawData().getContract(0);
@@ -567,12 +543,12 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
         validatePubSignature(accountStore, dynamicPropertiesStore);
       } else {  //ShieldedTransfer
         byte[] owner = getOwner(contract);
+        logger.info("Found owner ----> {}", Numeric.toHexString(owner));
         if (!ArrayUtils.isEmpty(owner)) { //transfer from transparent address
           validatePubSignature(accountStore, dynamicPropertiesStore);
         } else { //transfer from shielded address
           if (this.transaction.getSignatureCount() > 0) {
-            throw new ValidateSignatureException("there should be no signatures signed by "
-                    + "transparent address when transfer from shielded address");
+            throw new ValidateSignatureException("there should be no signatures signed by " + "transparent address when transfer from shielded address");
           }
         }
       }

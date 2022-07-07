@@ -12,8 +12,11 @@ import org.tron.api.GrpcAPI.Return;
 import org.tron.api.GrpcAPI.Return.response_code;
 import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.crypto.Hash;
+import org.tron.common.crypto.SignInterface;
+import org.tron.common.crypto.SignUtils;
 import org.tron.common.logsfilter.capsule.BlockFilterCapsule;
 import org.tron.common.logsfilter.capsule.LogsFilterCapsule;
+import org.tron.common.parameter.CommonParameter;
 import org.tron.common.runtime.vm.DataWord;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.ByteUtil;
@@ -21,6 +24,7 @@ import org.tron.core.Wallet;
 import org.tron.core.capsule.BlockCapsule;
 import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.capsule.utils.TransactionUtil;
+import org.tron.core.config.args.Args;
 import org.tron.core.db.Manager;
 import org.tron.core.db2.core.Chainbase;
 import org.tron.core.exception.*;
@@ -67,1205 +71,1189 @@ import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.*;
 @Slf4j(topic = "API")
 public class TronJsonRpcImpl implements TronJsonRpc {
 
-  public enum RequestSource {
-    FULLNODE,
-    SOLIDITY,
-    PBFT
-  }
-
-  private static final String FILTER_NOT_FOUND = "filter not found";
-  public static final int EXPIRE_SECONDS = 5 * 60;
-  /**
-   * for log filter in Full Json-RPC
-   */
-  @Getter
-  private static final Map<String, LogFilterAndResult> eventFilter2ResultFull =
-      new ConcurrentHashMap<>();
-  /**
-   * for block in Full Json-RPC
-   */
-  @Getter
-  private static final Map<String, BlockFilterAndResult> blockFilter2ResultFull =
-      new ConcurrentHashMap<>();
-  /**
-   * for log filter in solidity Json-RPC
-   */
-  @Getter
-  private static final Map<String, LogFilterAndResult> eventFilter2ResultSolidity =
-      new ConcurrentHashMap<>();
-  /**
-   * for block in solidity Json-RPC
-   */
-  @Getter
-  private static final Map<String, BlockFilterAndResult> blockFilter2ResultSolidity = new ConcurrentHashMap<>();
-
-  public static final String HASH_REGEX = "(0x)?[a-zA-Z0-9]{64}$";
-
-  public static final String EARLIEST_STR = "earliest";
-  public static final String PENDING_STR = "pending";
-  public static final String LATEST_STR = "latest";
-
-  private static final String JSON_ERROR = "invalid json request";
-  private static final String BLOCK_NUM_ERROR = "invalid block number";
-  private static final String TAG_NOT_SUPPORT_ERROR = "TAG [earliest | pending] not supported";
-  private static final String QUANTITY_NOT_SUPPORT_ERROR = "QUANTITY not supported, just support TAG as latest";
-
-  /**
-   * thread pool of query section bloom store
-   */
-  private final ExecutorService sectionExecutor;
-  private final NodeInfoService nodeInfoService;
-  private final Wallet wallet;
-  private final Manager manager;
-
-  public TronJsonRpcImpl(NodeInfoService nodeInfoService, Wallet wallet, Manager manager) {
-    this.nodeInfoService = nodeInfoService;
-    this.wallet = wallet;
-    this.manager = manager;
-    this.sectionExecutor = Executors.newFixedThreadPool(5);
-  }
-
-  public static void handleBLockFilter(BlockFilterCapsule blockFilterCapsule) {
-    Iterator<Entry<String, BlockFilterAndResult>> it;
-
-    if (blockFilterCapsule.isSolidified()) {
-      it = getBlockFilter2ResultSolidity().entrySet().iterator();
-    } else {
-      it = getBlockFilter2ResultFull().entrySet().iterator();
+    public enum RequestSource {
+        FULLNODE,
+        SOLIDITY,
+        PBFT
     }
 
-    while (it.hasNext()) {
-      Entry<String, BlockFilterAndResult> entry = it.next();
-      if (entry.getValue().isExpire()) {
-        it.remove();
-        continue;
-      }
-      entry.getValue().getResult().add(ByteArray.toJsonHex(blockFilterCapsule.getBlockHash()));
-    }
-  }
+    private static final String FILTER_NOT_FOUND = "filter not found";
+    public static final int EXPIRE_SECONDS = 5 * 60;
+    /**
+     * for log filter in Full Json-RPC
+     */
+    @Getter
+    private static final Map<String, LogFilterAndResult> eventFilter2ResultFull =
+            new ConcurrentHashMap<>();
+    /**
+     * for block in Full Json-RPC
+     */
+    @Getter
+    private static final Map<String, BlockFilterAndResult> blockFilter2ResultFull =
+            new ConcurrentHashMap<>();
+    /**
+     * for log filter in solidity Json-RPC
+     */
+    @Getter
+    private static final Map<String, LogFilterAndResult> eventFilter2ResultSolidity =
+            new ConcurrentHashMap<>();
+    /**
+     * for block in solidity Json-RPC
+     */
+    @Getter
+    private static final Map<String, BlockFilterAndResult> blockFilter2ResultSolidity = new ConcurrentHashMap<>();
 
-  public static void handleLogsFilter(LogsFilterCapsule logsFilterCapsule) {
-    Iterator<Entry<String, LogFilterAndResult>> it;
+    public static final String HASH_REGEX = "(0x)?[a-zA-Z0-9]{64}$";
 
-    if (logsFilterCapsule.isSolidified()) {
-      it = getEventFilter2ResultSolidity().entrySet().iterator();
-    } else {
-      it = getEventFilter2ResultFull().entrySet().iterator();
-    }
+    public static final String EARLIEST_STR = "earliest";
+    public static final String PENDING_STR = "pending";
+    public static final String LATEST_STR = "latest";
 
-    while (it.hasNext()) {
-      Entry<String, LogFilterAndResult> entry = it.next();
-      if (entry.getValue().isExpire()) {
-        it.remove();
-        continue;
-      }
+    private static final String JSON_ERROR = "invalid json request";
+    private static final String BLOCK_NUM_ERROR = "invalid block number";
+    private static final String TAG_NOT_SUPPORT_ERROR = "TAG [earliest | pending] not supported";
+    private static final String QUANTITY_NOT_SUPPORT_ERROR = "QUANTITY not supported, just support TAG as latest";
 
-      LogFilterAndResult logFilterAndResult = entry.getValue();
-      long fromBlock = logFilterAndResult.getLogFilterWrapper().getFromBlock();
-      long toBlock = logFilterAndResult.getLogFilterWrapper().getToBlock();
-      if (!(fromBlock <= logsFilterCapsule.getBlockNumber()
-          && logsFilterCapsule.getBlockNumber() <= toBlock)) {
-        continue;
-      }
+    /**
+     * thread pool of query section bloom store
+     */
+    private final ExecutorService sectionExecutor;
+    private final NodeInfoService nodeInfoService;
+    private final Wallet wallet;
+    private final Manager manager;
 
-      if (logsFilterCapsule.getBloom() != null
-          && !logFilterAndResult.getLogFilterWrapper().getLogFilter()
-          .matchBloom(logsFilterCapsule.getBloom())) {
-        continue;
-      }
-
-      LogFilter logFilter = logFilterAndResult.getLogFilterWrapper().getLogFilter();
-      List<LogFilterElement> elements =
-          LogMatch.matchBlock(logFilter, logsFilterCapsule.getBlockNumber(),
-              logsFilterCapsule.getBlockHash(), logsFilterCapsule.getTxInfoList(),
-              logsFilterCapsule.isRemoved());
-      if (CollectionUtils.isNotEmpty(elements)) {
-        logFilterAndResult.getResult().addAll(elements);
-      }
-    }
-  }
-
-  @Override
-  public String web3ClientVersion() {
-    logger.info("[sniper] web3ClientVersion ...");
-    Pattern shortVersion = Pattern.compile("(\\d\\.\\d).*");
-    Matcher matcher = shortVersion.matcher(System.getProperty("java.version"));
-    matcher.matches();
-
-    return String.join("/", Arrays.asList(
-        "TRON", "v" + Version.getVersion(),
-        System.getProperty("os.name"),
-        "Java" + matcher.group(1),
-        Version.VERSION_NAME));
-  }
-
-  @Override
-  public String web3Sha3(String data) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] web3Sha3 => {}", data);
-    byte[] input;
-    try {
-      input = ByteArray.fromHexString(data);
-    } catch (Exception e) {
-      throw new JsonRpcInvalidParamsException("invalid input value");
+    public TronJsonRpcImpl(NodeInfoService nodeInfoService, Wallet wallet, Manager manager) {
+        this.nodeInfoService = nodeInfoService;
+        this.wallet = wallet;
+        this.manager = manager;
+        this.sectionExecutor = Executors.newFixedThreadPool(5);
     }
 
-    byte[] result = Hash.sha3(input);
-    return ByteArray.toJsonHex(result);
-  }
+    public static void handleBLockFilter(BlockFilterCapsule blockFilterCapsule) {
+        Iterator<Entry<String, BlockFilterAndResult>> it;
 
-  @Override
-  public String ethGetBlockTransactionCountByHash(String blockHash) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] ethGetBlockTransactionCountByHash => {}", blockHash);
-    Block b = getBlockByJsonHash(blockHash);
-    if (b == null) {
-      return null;
+        if (blockFilterCapsule.isSolidified()) {
+            it = getBlockFilter2ResultSolidity().entrySet().iterator();
+        } else {
+            it = getBlockFilter2ResultFull().entrySet().iterator();
+        }
+
+        while (it.hasNext()) {
+            Entry<String, BlockFilterAndResult> entry = it.next();
+            if (entry.getValue().isExpire()) {
+                it.remove();
+                continue;
+            }
+            entry.getValue().getResult().add(ByteArray.toJsonHex(blockFilterCapsule.getBlockHash()));
+        }
     }
 
-    long n = b.getTransactionsList().size();
-    return ByteArray.toJsonHex(n);
-  }
+    public static void handleLogsFilter(LogsFilterCapsule logsFilterCapsule) {
+        Iterator<Entry<String, LogFilterAndResult>> it;
 
-  @Override
-  public String ethGetBlockTransactionCountByNumber(String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] ethGetBlockTransactionCountByNumber => {}", blockNumOrTag);
-    List<Transaction> list = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
-    if (list == null) {
-      return null;
+        if (logsFilterCapsule.isSolidified()) {
+            it = getEventFilter2ResultSolidity().entrySet().iterator();
+        } else {
+            it = getEventFilter2ResultFull().entrySet().iterator();
+        }
+
+        while (it.hasNext()) {
+            Entry<String, LogFilterAndResult> entry = it.next();
+            if (entry.getValue().isExpire()) {
+                it.remove();
+                continue;
+            }
+
+            LogFilterAndResult logFilterAndResult = entry.getValue();
+            long fromBlock = logFilterAndResult.getLogFilterWrapper().getFromBlock();
+            long toBlock = logFilterAndResult.getLogFilterWrapper().getToBlock();
+            if (!(fromBlock <= logsFilterCapsule.getBlockNumber()
+                    && logsFilterCapsule.getBlockNumber() <= toBlock)) {
+                continue;
+            }
+
+            if (logsFilterCapsule.getBloom() != null
+                    && !logFilterAndResult.getLogFilterWrapper().getLogFilter()
+                    .matchBloom(logsFilterCapsule.getBloom())) {
+                continue;
+            }
+
+            LogFilter logFilter = logFilterAndResult.getLogFilterWrapper().getLogFilter();
+            List<LogFilterElement> elements =
+                    LogMatch.matchBlock(logFilter, logsFilterCapsule.getBlockNumber(),
+                            logsFilterCapsule.getBlockHash(), logsFilterCapsule.getTxInfoList(),
+                            logsFilterCapsule.isRemoved());
+            if (CollectionUtils.isNotEmpty(elements)) {
+                logFilterAndResult.getResult().addAll(elements);
+            }
+        }
     }
 
-    long n = list.size();
-    return ByteArray.toJsonHex(n);
-  }
+    @Override
+    public String web3ClientVersion() {
+        logger.info("[sniper] web3ClientVersion ...");
+        Pattern shortVersion = Pattern.compile("(\\d\\.\\d).*");
+        Matcher matcher = shortVersion.matcher(System.getProperty("java.version"));
+        matcher.matches();
 
-  @Override
-  public BlockResult ethGetBlockByHash(String blockHash, Boolean fullTransactionObjects) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] ethGetBlockByHash => {} - {}", blockHash, fullTransactionObjects);
-    final Block b = getBlockByJsonHash(blockHash);
-    return getBlockResult(b, fullTransactionObjects);
-  }
-
-  @Override
-  public BlockResult ethGetBlockByNumber(String blockNumOrTag, Boolean fullTransactionObjects) throws JsonRpcInvalidParamsException {
-    final Block b = wallet.getByJsonBlockId(blockNumOrTag);
-    BlockResult result = (b == null ? null : getBlockResult(b, fullTransactionObjects));
-    logger.info("[sniper] ethGetBlockByNumber => {} - {} \n result: {}", blockNumOrTag, fullTransactionObjects, result);
-    return result;
-  }
-
-  private byte[] hashToByteArray(String hash) throws JsonRpcInvalidParamsException {
-    if (!Pattern.matches(HASH_REGEX, hash)) {
-      throw new JsonRpcInvalidParamsException("invalid hash value");
+        return String.join("/", Arrays.asList(
+                "TRON", "v" + Version.getVersion(),
+                System.getProperty("os.name"),
+                "Java" + matcher.group(1),
+                Version.VERSION_NAME));
     }
 
-    byte[] bHash;
-    try {
-      bHash = ByteArray.fromHexString(hash);
-    } catch (Exception e) {
-      throw new JsonRpcInvalidParamsException(e.getMessage());
-    }
-    return bHash;
-  }
+    @Override
+    public String web3Sha3(String data) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] web3Sha3 => {}", data);
+        byte[] input;
+        try {
+            input = ByteArray.fromHexString(data);
+        } catch (Exception e) {
+            throw new JsonRpcInvalidParamsException("invalid input value");
+        }
 
-  private Block getBlockByJsonHash(String blockHash) throws JsonRpcInvalidParamsException {
-    byte[] bHash = hashToByteArray(blockHash);
-    return wallet.getBlockById(ByteString.copyFrom(bHash));
-  }
-
-  private BlockResult getBlockResult(Block block, boolean fullTx) {
-    if (block == null) {
-      return null;
+        byte[] result = Hash.sha3(input);
+        return ByteArray.toJsonHex(result);
     }
 
-    return new BlockResult(block, fullTx, wallet);
-  }
+    @Override
+    public String ethGetBlockTransactionCountByHash(String blockHash) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] ethGetBlockTransactionCountByHash => {}", blockHash);
+        Block b = getBlockByJsonHash(blockHash);
+        if (b == null) {
+            return null;
+        }
 
-  @Override
-  public String getNetVersion() throws JsonRpcInternalException {
-    logger.info("[sniper] getNetVersion ...");
-    int chainId = Numeric.toBigInt(new byte[]{Wallet.getAddressPreFixByte()}).intValue();
-    return Integer.toString(chainId);
-  }
+        long n = b.getTransactionsList().size();
+        return ByteArray.toJsonHex(n);
+    }
+
+    @Override
+    public String ethGetBlockTransactionCountByNumber(String blockNumOrTag) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] ethGetBlockTransactionCountByNumber => {}", blockNumOrTag);
+        List<Transaction> list = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
+        if (list == null) {
+            return null;
+        }
+
+        long n = list.size();
+        return ByteArray.toJsonHex(n);
+    }
+
+    @Override
+    public BlockResult ethGetBlockByHash(String blockHash, Boolean fullTransactionObjects) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] ethGetBlockByHash => {} - {}", blockHash, fullTransactionObjects);
+        final Block b = getBlockByJsonHash(blockHash);
+        return getBlockResult(b, fullTransactionObjects);
+    }
+
+    @Override
+    public BlockResult ethGetBlockByNumber(String blockNumOrTag, Boolean fullTransactionObjects) throws JsonRpcInvalidParamsException {
+        final Block b = wallet.getByJsonBlockId(blockNumOrTag);
+        BlockResult result = (b == null ? null : getBlockResult(b, fullTransactionObjects));
+        logger.info("[sniper] ethGetBlockByNumber => {} - {} \n result: {}", blockNumOrTag, fullTransactionObjects, result);
+        return result;
+    }
+
+    private byte[] hashToByteArray(String hash) throws JsonRpcInvalidParamsException {
+        if (!Pattern.matches(HASH_REGEX, hash)) {
+            throw new JsonRpcInvalidParamsException("invalid hash value");
+        }
+
+        byte[] bHash;
+        try {
+            bHash = ByteArray.fromHexString(hash);
+        } catch (Exception e) {
+            throw new JsonRpcInvalidParamsException(e.getMessage());
+        }
+        return bHash;
+    }
+
+    private Block getBlockByJsonHash(String blockHash) throws JsonRpcInvalidParamsException {
+        byte[] bHash = hashToByteArray(blockHash);
+        return wallet.getBlockById(ByteString.copyFrom(bHash));
+    }
+
+    private BlockResult getBlockResult(Block block, boolean fullTx) {
+        if (block == null) {
+            return null;
+        }
+
+        return new BlockResult(block, fullTx, wallet);
+    }
+
+    @Override
+    public String getNetVersion() throws JsonRpcInternalException {
+        logger.info("[sniper] getNetVersion ...");
+        int chainId = Numeric.toBigInt(new byte[]{Wallet.getAddressPreFixByte()}).intValue();
+        return Integer.toString(chainId);
+    }
 
 
-  @Override
-  public String ethChainId() throws JsonRpcInternalException {
-    logger.info("[sniper] ethChainId...");
+    @Override
+    public String ethChainId() throws JsonRpcInternalException {
+        logger.info("[sniper] ethChainId...");
 
-    // return hash of genesis block
-    try {
+        // return hash of genesis block
+        try {
 //      byte[] chainId = wallet.getBlockCapsuleByNum(0).getBlockId().getBytes();
 //      return ByteArray.toJsonHex(Arrays.copyOfRange(chainId, chainId.length - 4, chainId.length));
 
-      String chainId = Wallet.getAddressPreFixString();
-      return  ByteArray.toJsonHex(chainId);
-    } catch (Exception e) {
-      throw new JsonRpcInternalException(e.getMessage());
-    }
-  }
-
-
-  @Override
-  public boolean isListening() {
-    logger.info("[sniper] isListening...");
-    int activeConnectCount = nodeInfoService.getNodeInfo().getActiveConnectCount();
-    return activeConnectCount >= 1;
-  }
-
-  @Override
-  public String getProtocolVersion() {
-    logger.info("[sniper] getProtocolVersion...");
-    return ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getVersion());
-  }
-
-  @Override
-  public String getLatestBlockNum() {
-    String block = ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getNumber());
-    logger.info("[sniper] getLatestBlockNum {}", block);
-    return block;
-  }
-
-  @Override
-  public String getTrxBalance(String address, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getTrxBalance...");
-    if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-        || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
-      throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
-    } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
-      byte[] addressData = addressCompatibleToByteArray(address);
-
-      Account account = Account.newBuilder().setAddress(ByteString.copyFrom(addressData)).build();
-      Account reply = wallet.getAccount(account);
-      long balance = 0;
-
-      if (reply != null) {
-        balance = reply.getBalance();
-      }
-      return ByteArray.toJsonHex(balance);
-    } else {
-      try {
-        ByteArray.hexToBigInteger(blockNumOrTag);
-      } catch (Exception e) {
-        throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
-      }
-
-      throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
-    }
-  }
-
-  private void callTriggerConstantContract(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data, TransactionExtention.Builder trxExtBuilder, Return.Builder retBuilder) throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
-
-    TriggerSmartContract triggerContract = triggerCallContract(
-        ownerAddressByte,
-        contractAddressByte,
-        value,
-        data,
-        0,
-        null
-    );
-
-    TransactionCapsule trxCap = wallet.createTransactionCapsule(triggerContract, ContractType.TriggerSmartContract);
-    Transaction trx = wallet.triggerConstantContract(triggerContract, trxCap, trxExtBuilder, retBuilder);
-
-    trxExtBuilder.setTransaction(trx);
-    trxExtBuilder.setTxid(trxCap.getTransactionId().getByteString());
-    trxExtBuilder.setResult(retBuilder);
-    retBuilder.setResult(true).setCode(response_code.SUCCESS);
-  }
-
-  /**
-   * @param data Hash of the method signature and encoded parameters. for example:
-   * getMethodSign(methodName(uint256,uint256)) || data1 || data2
-   */
-  private String call(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data) {
-
-    TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
-    Return.Builder retBuilder = Return.newBuilder();
-    TransactionExtention trxExt;
-
-    try {
-      callTriggerConstantContract(ownerAddressByte, contractAddressByte, value, data, trxExtBuilder, retBuilder);
-
-    } catch (ContractValidateException | VMIllegalException e) {
-      retBuilder.setResult(false).setCode(response_code.CONTRACT_VALIDATE_ERROR).setMessage(ByteString.copyFromUtf8(CONTRACT_VALIDATE_ERROR + e.getMessage()));
-      trxExtBuilder.setResult(retBuilder);
-      logger.warn(CONTRACT_VALIDATE_EXCEPTION, e.getMessage());
-    } catch (RuntimeException e) {
-      retBuilder.setResult(false).setCode(response_code.CONTRACT_EXE_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
-      trxExtBuilder.setResult(retBuilder);
-      logger.warn("When run constant call in VM, have RuntimeException: " + e.getMessage());
-    } catch (Exception e) {
-      retBuilder.setResult(false).setCode(response_code.OTHER_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
-      trxExtBuilder.setResult(retBuilder);
-      logger.warn("Unknown exception caught: " + e.getMessage(), e);
-    } finally {
-      trxExt = trxExtBuilder.build();
+            String chainId = Wallet.getAddressPreFixString();
+            return ByteArray.toJsonHex(chainId);
+        } catch (Exception e) {
+            throw new JsonRpcInternalException(e.getMessage());
+        }
     }
 
-    String result = "0x";
-    String code = trxExt.getResult().getCode().toString();
-    if ("SUCCESS".equals(code)) {
-      List<ByteString> list = trxExt.getConstantResultList();
-      byte[] listBytes = new byte[0];
-      for (ByteString bs : list) {
-        listBytes = ByteUtil.merge(listBytes, bs.toByteArray());
-      }
-      result = ByteArray.toJsonHex(listBytes);
-    } else {
-      logger.error("trigger contract failed.");
+
+    @Override
+    public boolean isListening() {
+        logger.info("[sniper] isListening...");
+        int activeConnectCount = nodeInfoService.getNodeInfo().getActiveConnectCount();
+        return activeConnectCount >= 1;
     }
 
-    return result;
-  }
-
-  @Override
-  public String getStorageAt(String address, String storageIdx, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getStorageAt...");
-
-    if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-        || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
-      throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
-    } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
-      byte[] addressByte = addressCompatibleToByteArray(address);
-
-      // get contract from contractStore
-      BytesMessage.Builder build = BytesMessage.newBuilder();
-      BytesMessage bytesMessage = build.setValue(ByteString.copyFrom(addressByte)).build();
-      SmartContract smartContract = wallet.getContract(bytesMessage);
-      if (smartContract == null) {
-        return ByteArray.toJsonHex(new byte[32]);
-      }
-
-      StorageRowStore store = manager.getStorageRowStore();
-      Storage storage = new Storage(addressByte, store);
-      storage.setContractVersion(smartContract.getVersion());
-
-      DataWord value = storage.getValue(new DataWord(ByteArray.fromHexString(storageIdx)));
-      return ByteArray.toJsonHex(value == null ? new byte[32] : value.getData());
-    } else {
-      try {
-        ByteArray.hexToBigInteger(blockNumOrTag);
-      } catch (Exception e) {
-        throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
-      }
-
-      throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
-    }
-  }
-
-  @Override
-  public String getABIOfSmartContract(String contractAddress, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getABIOfSmartContract ==> {}, {}", contractAddress, contractAddress);
-
-    if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-        || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
-      throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
-    } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
-      byte[] addressData = addressCompatibleToByteArray(contractAddress);
-
-      BytesMessage.Builder build = BytesMessage.newBuilder();
-      BytesMessage bytesMessage = build.setValue(ByteString.copyFrom(addressData)).build();
-      SmartContractDataWrapper contractDataWrapper = wallet.getContractInfo(bytesMessage);
-
-      if (contractDataWrapper != null) {
-        return ByteArray.toJsonHex(contractDataWrapper.getRuntimecode().toByteArray());
-      } else {
-        return "0x";
-      }
-
-    } else {
-      try {
-        ByteArray.hexToBigInteger(blockNumOrTag);
-      } catch (Exception e) {
-        throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
-      }
-
-      throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
-    }
-  }
-
-  @Override
-  public String getCoinbase() throws JsonRpcInternalException {
-    logger.info("[sniper] getCoinbase ...");
-
-    String address = wallet.getCoinbase();
-
-    if (StringUtils.isEmpty(address)) {
-      throw new JsonRpcInternalException("etherbase must be explicitly specified");
+    @Override
+    public String getProtocolVersion() {
+        logger.info("[sniper] getProtocolVersion...");
+        return ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getVersion());
     }
 
-    return address;
-  }
-
-  @Override
-  public String gasPrice() {
-    logger.info("[sniper] gasPrice...");
-    return ByteArray.toJsonHex(wallet.getEnergyFee());
-  }
-
-  @Override
-  public String estimateGas(CallArguments args) throws JsonRpcInvalidRequestException, JsonRpcInvalidParamsException, JsonRpcInternalException {
-    logger.info("[sniper] estimateGas ===> {}", args);
-
-    byte[] ownerAddress = addressCompatibleToByteArray(args.getFrom());
-
-    ContractType contractType = args.getContractType(wallet);
-    if (contractType == ContractType.TransferContract) {
-      buildTransferContractTransaction(ownerAddress, new BuildArguments(args));
-      return "0x0";
+    @Override
+    public String getLatestBlockNum() {
+        String block = ByteArray.toJsonHex(wallet.getNowBlock().getBlockHeader().getRawData().getNumber());
+        logger.info("[sniper] getLatestBlockNum {}", block);
+        return block;
     }
 
-    TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
-    Return.Builder retBuilder = Return.newBuilder();
+    @Override
+    public String getTrxBalance(String address, String blockNumOrTag) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getTrxBalance...");
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
+                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
+        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
+            byte[] addressData = addressCompatibleToByteArray(address);
 
-    try {
-      byte[] contractAddress;
+            Account account = Account.newBuilder().setAddress(ByteString.copyFrom(addressData)).build();
+            Account reply = wallet.getAccount(account);
+            long balance = 0;
 
-      if (contractType == ContractType.TriggerSmartContract) {
-        contractAddress = addressCompatibleToByteArray(args.getTo());
-      } else {
-        contractAddress = new byte[0];
-      }
+            if (reply != null) {
+                balance = reply.getBalance();
+            }
+            return ByteArray.toJsonHex(balance);
+        } else {
+            try {
+                ByteArray.hexToBigInteger(blockNumOrTag);
+            } catch (Exception e) {
+                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
+            }
 
-      callTriggerConstantContract(ownerAddress,
-          contractAddress,
-          args.parseValue(),
-          ByteArray.fromHexString(args.getData()),
-          trxExtBuilder,
-          retBuilder);
-
-      return ByteArray.toJsonHex(trxExtBuilder.getEnergyUsed());
-    } catch (ContractValidateException e) {
-      String errString = "invalid contract";
-      if (e.getMessage() != null) {
-        errString = e.getMessage();
-      }
-
-      throw new JsonRpcInvalidRequestException(errString);
-    } catch (Exception e) {
-      String errString = JSON_ERROR;
-      if (e.getMessage() != null) {
-        errString = e.getMessage().replaceAll("[\"]", "'");
-      }
-
-      throw new JsonRpcInternalException(errString);
+            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+        }
     }
-  }
 
-  @Override
-  public TransactionResult getTransactionByHash(String txId) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getTransactionByHash ===> {}", txId);
+    private void callTriggerConstantContract(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data, TransactionExtention.Builder trxExtBuilder, Return.Builder retBuilder) throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
 
-    ByteString transactionId = ByteString.copyFrom(hashToByteArray(txId));
+        TriggerSmartContract triggerContract = triggerCallContract(
+                ownerAddressByte,
+                contractAddressByte,
+                value,
+                data,
+                0,
+                null
+        );
 
-    TransactionInfo transactionInfo = wallet.getTransactionInfoById(transactionId);
-    if (transactionInfo == null) {
-      TransactionCapsule transactionCapsule = wallet.getTransactionCapsuleById(transactionId);
-      if (transactionCapsule == null) {
-        return null;
-      }
+        TransactionCapsule trxCap = wallet.createTransactionCapsule(triggerContract, ContractType.TriggerSmartContract);
+        Transaction trx = wallet.triggerConstantContract(triggerContract, trxCap, trxExtBuilder, retBuilder);
 
-      BlockCapsule blockCapsule = wallet.getBlockCapsuleByNum(transactionCapsule.getBlockNum());
-      if (blockCapsule == null) {
-        return new TransactionResult(transactionCapsule.getInstance(), wallet);
-      } else {
-        int transactionIndex = getTransactionIndex(
-            ByteArray.toHexString(transactionCapsule.getTransactionId().getBytes()),
-            blockCapsule.getInstance().getTransactionsList());
+        trxExtBuilder.setTransaction(trx);
+        trxExtBuilder.setTxid(trxCap.getTransactionId().getByteString());
+        trxExtBuilder.setResult(retBuilder);
+        retBuilder.setResult(true).setCode(response_code.SUCCESS);
+    }
 
-        if (transactionIndex == -1) {
-          return null;
+    /**
+     * @param data Hash of the method signature and encoded parameters. for example:
+     *             getMethodSign(methodName(uint256,uint256)) || data1 || data2
+     */
+    private String call(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data) {
+
+        TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
+        Return.Builder retBuilder = Return.newBuilder();
+        TransactionExtention trxExt;
+
+        try {
+            callTriggerConstantContract(ownerAddressByte, contractAddressByte, value, data, trxExtBuilder, retBuilder);
+
+        } catch (ContractValidateException | VMIllegalException e) {
+            retBuilder.setResult(false).setCode(response_code.CONTRACT_VALIDATE_ERROR).setMessage(ByteString.copyFromUtf8(CONTRACT_VALIDATE_ERROR + e.getMessage()));
+            trxExtBuilder.setResult(retBuilder);
+            logger.warn(CONTRACT_VALIDATE_EXCEPTION, e.getMessage());
+        } catch (RuntimeException e) {
+            retBuilder.setResult(false).setCode(response_code.CONTRACT_EXE_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
+            trxExtBuilder.setResult(retBuilder);
+            logger.warn("When run constant call in VM, have RuntimeException: " + e.getMessage());
+        } catch (Exception e) {
+            retBuilder.setResult(false).setCode(response_code.OTHER_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
+            trxExtBuilder.setResult(retBuilder);
+            logger.warn("Unknown exception caught: " + e.getMessage(), e);
+        } finally {
+            trxExt = trxExtBuilder.build();
         }
 
-        long energyUsageTotal = 0;
-        return new TransactionResult(blockCapsule, transactionIndex,
-            transactionCapsule.getInstance(), energyUsageTotal,
-            wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
-      }
-    } else {
-      Block block = wallet.getBlockByNum(transactionInfo.getBlockNumber());
-      if (block == null) {
+        String result = "0x";
+        String code = trxExt.getResult().getCode().toString();
+        if ("SUCCESS".equals(code)) {
+            List<ByteString> list = trxExt.getConstantResultList();
+            byte[] listBytes = new byte[0];
+            for (ByteString bs : list) {
+                listBytes = ByteUtil.merge(listBytes, bs.toByteArray());
+            }
+            result = ByteArray.toJsonHex(listBytes);
+        } else {
+            logger.error("trigger contract failed.");
+        }
+
+        return result;
+    }
+
+    @Override
+    public String getStorageAt(String address, String storageIdx, String blockNumOrTag) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getStorageAt...");
+
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
+                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
+        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
+            byte[] addressByte = addressCompatibleToByteArray(address);
+
+            // get contract from contractStore
+            BytesMessage.Builder build = BytesMessage.newBuilder();
+            BytesMessage bytesMessage = build.setValue(ByteString.copyFrom(addressByte)).build();
+            SmartContract smartContract = wallet.getContract(bytesMessage);
+            if (smartContract == null) {
+                return ByteArray.toJsonHex(new byte[32]);
+            }
+
+            StorageRowStore store = manager.getStorageRowStore();
+            Storage storage = new Storage(addressByte, store);
+            storage.setContractVersion(smartContract.getVersion());
+
+            DataWord value = storage.getValue(new DataWord(ByteArray.fromHexString(storageIdx)));
+            return ByteArray.toJsonHex(value == null ? new byte[32] : value.getData());
+        } else {
+            try {
+                ByteArray.hexToBigInteger(blockNumOrTag);
+            } catch (Exception e) {
+                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
+            }
+
+            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+        }
+    }
+
+    @Override
+    public String getABIOfSmartContract(String contractAddress, String blockNumOrTag) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getABIOfSmartContract ==> {}, {}", contractAddress, contractAddress);
+
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
+                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
+        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
+            byte[] addressData = addressCompatibleToByteArray(contractAddress);
+
+            BytesMessage.Builder build = BytesMessage.newBuilder();
+            BytesMessage bytesMessage = build.setValue(ByteString.copyFrom(addressData)).build();
+            SmartContractDataWrapper contractDataWrapper = wallet.getContractInfo(bytesMessage);
+
+            if (contractDataWrapper != null) {
+                return ByteArray.toJsonHex(contractDataWrapper.getRuntimecode().toByteArray());
+            } else {
+                return "0x";
+            }
+
+        } else {
+            try {
+                ByteArray.hexToBigInteger(blockNumOrTag);
+            } catch (Exception e) {
+                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
+            }
+
+            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+        }
+    }
+
+    @Override
+    public String getCoinbase() throws JsonRpcInternalException {
+        logger.info("[sniper] getCoinbase ...");
+
+        String address = wallet.getCoinbase();
+
+        if (StringUtils.isEmpty(address)) {
+            throw new JsonRpcInternalException("etherbase must be explicitly specified");
+        }
+
+        return address;
+    }
+
+    @Override
+    public String gasPrice() {
+        logger.info("[sniper] gasPrice...");
+        return ByteArray.toJsonHex(wallet.getEnergyFee());
+    }
+
+    @Override
+    public String estimateGas(CallArguments args) throws JsonRpcInvalidRequestException, JsonRpcInvalidParamsException, JsonRpcInternalException {
+        logger.info("[sniper] estimateGas ===> {}", args);
+
+        byte[] ownerAddress = addressCompatibleToByteArray(args.getFrom());
+
+        ContractType contractType = args.getContractType(wallet);
+        if (contractType == ContractType.TransferContract) {
+            buildTransferContractTransaction(ownerAddress, new BuildArguments(args));
+            return "0x0";
+        }
+
+        TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
+        Return.Builder retBuilder = Return.newBuilder();
+
+        try {
+            byte[] contractAddress;
+
+            if (contractType == ContractType.TriggerSmartContract) {
+                contractAddress = addressCompatibleToByteArray(args.getTo());
+            } else {
+                contractAddress = new byte[0];
+            }
+
+            callTriggerConstantContract(ownerAddress,
+                    contractAddress,
+                    args.parseValue(),
+                    ByteArray.fromHexString(args.getData()),
+                    trxExtBuilder,
+                    retBuilder);
+
+            return ByteArray.toJsonHex(trxExtBuilder.getEnergyUsed());
+        } catch (ContractValidateException e) {
+            String errString = "invalid contract";
+            if (e.getMessage() != null) {
+                errString = e.getMessage();
+            }
+
+            throw new JsonRpcInvalidRequestException(errString);
+        } catch (Exception e) {
+            String errString = JSON_ERROR;
+            if (e.getMessage() != null) {
+                errString = e.getMessage().replaceAll("[\"]", "'");
+            }
+
+            throw new JsonRpcInternalException(errString);
+        }
+    }
+
+    @Override
+    public TransactionResult getTransactionByHash(String txId) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getTransactionByHash ===> {}", txId);
+
+        ByteString transactionId = ByteString.copyFrom(hashToByteArray(txId));
+
+        TransactionInfo transactionInfo = wallet.getTransactionInfoById(transactionId);
+        if (transactionInfo == null) {
+            TransactionCapsule transactionCapsule = wallet.getTransactionCapsuleById(transactionId);
+            if (transactionCapsule == null) {
+                return null;
+            }
+
+            BlockCapsule blockCapsule = wallet.getBlockCapsuleByNum(transactionCapsule.getBlockNum());
+            if (blockCapsule == null) {
+                return new TransactionResult(transactionCapsule.getInstance(), wallet);
+            } else {
+                int transactionIndex = getTransactionIndex(
+                        ByteArray.toHexString(transactionCapsule.getTransactionId().getBytes()),
+                        blockCapsule.getInstance().getTransactionsList());
+
+                if (transactionIndex == -1) {
+                    return null;
+                }
+
+                long energyUsageTotal = 0;
+                return new TransactionResult(blockCapsule, transactionIndex,
+                        transactionCapsule.getInstance(), energyUsageTotal,
+                        wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
+            }
+        } else {
+            Block block = wallet.getBlockByNum(transactionInfo.getBlockNumber());
+            if (block == null) {
+                return null;
+            }
+
+            return formatTransactionResult(transactionInfo, block);
+        }
+    }
+
+    private TransactionResult formatTransactionResult(TransactionInfo transactioninfo, Block block) {
+        String txId = ByteArray.toHexString(transactioninfo.getId().toByteArray());
+
+        Transaction transaction = null;
+        int transactionIndex = -1;
+
+        List<Transaction> txList = block.getTransactionsList();
+        for (int index = 0; index < txList.size(); index++) {
+            transaction = txList.get(index);
+            if (getTxID(transaction).equals(txId)) {
+                transactionIndex = index;
+                break;
+            }
+        }
+
+        if (transactionIndex == -1) {
+            return null;
+        }
+
+        long energyUsageTotal = transactioninfo.getReceipt().getEnergyUsageTotal();
+        BlockCapsule blockCapsule = new BlockCapsule(block);
+        return new TransactionResult(blockCapsule, transactionIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
+    }
+
+    private TransactionResult getTransactionByBlockAndIndex(Block block, String index) throws JsonRpcInvalidParamsException {
+        int txIndex;
+        try {
+            txIndex = ByteArray.jsonHexToInt(index);
+        } catch (Exception e) {
+            throw new JsonRpcInvalidParamsException("invalid index value");
+        }
+
+        if (txIndex >= block.getTransactionsCount()) {
+            return null;
+        }
+
+        Transaction transaction = block.getTransactions(txIndex);
+        long energyUsageTotal = getEnergyUsageTotal(transaction, wallet);
+        BlockCapsule blockCapsule = new BlockCapsule(block);
+
+        return new TransactionResult(blockCapsule, txIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
+    }
+
+    @Override
+    public TransactionResult getTransactionByBlockHashAndIndex(String blockHash, String index)
+            throws JsonRpcInvalidParamsException {
+        final Block block = getBlockByJsonHash(blockHash);
+
+        if (block == null) {
+            return null;
+        }
+
+        return getTransactionByBlockAndIndex(block, index);
+    }
+
+    @Override
+    public TransactionResult getTransactionByBlockNumberAndIndex(String blockNumOrTag, String index) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getTransactionReceipt ===> {}, {}", blockNumOrTag, index);
+        Block block = wallet.getByJsonBlockId(blockNumOrTag);
+        if (block == null) {
+            return null;
+        }
+
+        return getTransactionByBlockAndIndex(block, index);
+    }
+
+    @Override
+    public TransactionReceipt getTransactionReceipt(String txId) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getTransactionReceipt ===> {}", txId);
+        TransactionInfo transactionInfo = wallet.getTransactionInfoById(ByteString.copyFrom(hashToByteArray(txId)));
+        if (transactionInfo == null) {
+            return null;
+        }
+
+        Block block = wallet.getBlockByNum(transactionInfo.getBlockNumber());
+        if (block == null) {
+            return null;
+        }
+
+        return new TransactionReceipt(block, transactionInfo, wallet);
+    }
+
+    @Override
+    public String getCall(CallArguments transactionCall, String blockNumOrTag) throws JsonRpcInvalidParamsException {
+        logger.info("[sniper] getCall ===> {}-{}", transactionCall, blockNumOrTag);
+
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
+                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
+        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
+            byte[] addressData = addressCompatibleToByteArray(transactionCall.getFrom());
+            byte[] contractAddressData = addressCompatibleToByteArray(transactionCall.getTo());
+
+            return call(addressData, contractAddressData, transactionCall.parseValue(), ByteArray.fromHexString(transactionCall.getData()));
+        } else {
+            try {
+                ByteArray.hexToBigInteger(blockNumOrTag).longValue();
+            } catch (Exception e) {
+                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
+            }
+
+            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+        }
+    }
+
+    @Override
+    public String getPeerCount() {
+        logger.info("[sniper] getPeerCount ");
+
+        // return the peer list count
+        return ByteArray.toJsonHex(nodeInfoService.getNodeInfo().getPeerList().size());
+    }
+
+    @Override
+    public Object getSyncingStatus() {
+        logger.info("[sniper] getSyncingStatus ");
+
+        if (nodeInfoService.getNodeInfo().getPeerList().isEmpty()) {
+            return false;
+        }
+
+        long startingBlockNum = nodeInfoService.getNodeInfo().getBeginSyncNum();
+        Block nowBlock = wallet.getNowBlock();
+        long currentBlockNum = nowBlock.getBlockHeader().getRawData().getNumber();
+        long diff = (System.currentTimeMillis() - nowBlock.getBlockHeader().getRawData().getTimestamp()) / 3000;
+        diff = diff > 0 ? diff : 0;
+        long highestBlockNum = currentBlockNum + diff; // estimated the highest block number
+
+        return new SyncingResult(ByteArray.toJsonHex(startingBlockNum),
+                ByteArray.toJsonHex(currentBlockNum),
+                ByteArray.toJsonHex(highestBlockNum)
+        );
+    }
+
+    @Override
+    public BlockResult getUncleByBlockHashAndIndex(String blockHash, String index) {
+        logger.info("[sniper] getUncleByBlockHashAndIndex ");
         return null;
-      }
-
-      return formatTransactionResult(transactionInfo, block);
-    }
-  }
-
-  private TransactionResult formatTransactionResult(TransactionInfo transactioninfo, Block block) {
-    String txId = ByteArray.toHexString(transactioninfo.getId().toByteArray());
-
-    Transaction transaction = null;
-    int transactionIndex = -1;
-
-    List<Transaction> txList = block.getTransactionsList();
-    for (int index = 0; index < txList.size(); index++) {
-      transaction = txList.get(index);
-      if (getTxID(transaction).equals(txId)) {
-        transactionIndex = index;
-        break;
-      }
     }
 
-    if (transactionIndex == -1) {
-      return null;
+    @Override
+    public BlockResult getUncleByBlockNumberAndIndex(String blockNumOrTag, String index) {
+        logger.info("[sniper] getUncleByBlockNumberAndIndex ");
+        return null;
     }
 
-    long energyUsageTotal = transactioninfo.getReceipt().getEnergyUsageTotal();
-    BlockCapsule blockCapsule = new BlockCapsule(block);
-    return new TransactionResult(blockCapsule, transactionIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
-  }
-
-  private TransactionResult getTransactionByBlockAndIndex(Block block, String index) throws JsonRpcInvalidParamsException {
-    int txIndex;
-    try {
-      txIndex = ByteArray.jsonHexToInt(index);
-    } catch (Exception e) {
-      throw new JsonRpcInvalidParamsException("invalid index value");
+    @Override
+    public String getUncleCountByBlockHash(String blockHash) {
+        logger.info("[sniper] getUncleByBlockNumberAndIndex ");
+        return "0x0";
     }
 
-    if (txIndex >= block.getTransactionsCount()) {
-      return null;
+    @Override
+    public String getUncleCountByBlockNumber(String blockNumOrTag) {
+        return "0x0";
     }
 
-    Transaction transaction = block.getTransactions(txIndex);
-    long energyUsageTotal = getEnergyUsageTotal(transaction, wallet);
-    BlockCapsule blockCapsule = new BlockCapsule(block);
+    @Override
+    public List<Object> ethGetWork() {
+        Block block = wallet.getNowBlock();
+        String blockHash = null;
 
-    return new TransactionResult(blockCapsule, txIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
-  }
+        if (block != null) {
+            blockHash = ByteArray.toJsonHex(new BlockCapsule(block).getBlockId().getBytes());
+        }
 
-  @Override
-  public TransactionResult getTransactionByBlockHashAndIndex(String blockHash, String index)
-      throws JsonRpcInvalidParamsException {
-    final Block block = getBlockByJsonHash(blockHash);
-
-    if (block == null) {
-      return null;
+        return Arrays.asList(
+                blockHash,
+                null,
+                null
+        );
     }
 
-    return getTransactionByBlockAndIndex(block, index);
-  }
-
-  @Override
-  public TransactionResult getTransactionByBlockNumberAndIndex(String blockNumOrTag, String index) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getTransactionReceipt ===> {}, {}", blockNumOrTag, index);
-    Block block = wallet.getByJsonBlockId(blockNumOrTag);
-    if (block == null) {
-      return null;
+    @Override
+    public String getHashRate() {
+        return "0x0";
     }
 
-    return getTransactionByBlockAndIndex(block, index);
-  }
-
-  @Override
-  public TransactionReceipt getTransactionReceipt(String txId) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getTransactionReceipt ===> {}", txId);
-    TransactionInfo transactionInfo =
-        wallet.getTransactionInfoById(ByteString.copyFrom(hashToByteArray(txId)));
-    if (transactionInfo == null) {
-      return null;
+    @Override
+    public boolean isMining() {
+        return wallet.isMining();
     }
 
-    Block block = wallet.getBlockByNum(transactionInfo.getBlockNumber());
-    if (block == null) {
-      return null;
+    @Override
+    public String[] getAccounts() {
+        return new String[0];
     }
 
-    return new TransactionReceipt(block, transactionInfo, wallet);
-  }
+    private TransactionJson buildCreateSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
+        try {
+            CreateSmartContract.Builder build = CreateSmartContract.newBuilder();
 
-  @Override
-  public String getCall(CallArguments transactionCall, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-    logger.info("[sniper] getCall ===> {}-{}", transactionCall, blockNumOrTag);
+            build.setOwnerAddress(ByteString.copyFrom(ownerAddress));
 
-    if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-        || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
-      throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
-    } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
-      byte[] addressData = addressCompatibleToByteArray(transactionCall.getFrom());
-      byte[] contractAddressData = addressCompatibleToByteArray(transactionCall.getTo());
+            build.setCallTokenValue(args.getTokenValue()).setTokenId(args.getTokenId());
 
-      return call(addressData, contractAddressData, transactionCall.parseValue(), ByteArray.fromHexString(transactionCall.getData()));
-    } else {
-      try {
-        ByteArray.hexToBigInteger(blockNumOrTag).longValue();
-      } catch (Exception e) {
-        throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
-      }
+            ABI.Builder abiBuilder = ABI.newBuilder();
+            if (StringUtils.isNotEmpty(args.getAbi())) {
+                String abiStr = "{" + "\"entrys\":" + args.getAbi() + "}";
+                JsonFormat.merge(abiStr, abiBuilder, args.isVisible());
+            }
 
-      throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
-    }
-  }
+            SmartContract.Builder smartBuilder = SmartContract.newBuilder();
+            smartBuilder
+                    .setAbi(abiBuilder)
+                    .setCallValue(args.parseValue())
+                    .setConsumeUserResourcePercent(args.getConsumeUserResourcePercent())
+                    .setOriginEnergyLimit(args.getOriginEnergyLimit());
 
-  @Override
-  public String getPeerCount() {
-    logger.info("[sniper] getPeerCount ");
+            smartBuilder.setOriginAddress(ByteString.copyFrom(ownerAddress));
 
-    // return the peer list count
-    return ByteArray.toJsonHex(nodeInfoService.getNodeInfo().getPeerList().size());
-  }
+            // bytecode + parameter
+            smartBuilder.setBytecode(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
 
-  @Override
-  public Object getSyncingStatus() {
-      logger.info("[sniper] getSyncingStatus ");
+            if (StringUtils.isNotEmpty(args.getName())) {
+                smartBuilder.setName(args.getName());
+            }
 
-      if (nodeInfoService.getNodeInfo().getPeerList().isEmpty()) {
-      return false;
-    }
+            build.setNewContract(smartBuilder);
 
-    long startingBlockNum = nodeInfoService.getNodeInfo().getBeginSyncNum();
-    Block nowBlock = wallet.getNowBlock();
-    long currentBlockNum = nowBlock.getBlockHeader().getRawData().getNumber();
-    long diff = (System.currentTimeMillis() - nowBlock.getBlockHeader().getRawData().getTimestamp()) / 3000;
-    diff = diff > 0 ? diff : 0;
-    long highestBlockNum = currentBlockNum + diff; // estimated the highest block number
+            Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.CreateSmartContract).getInstance();
+            Transaction.Builder txBuilder = tx.toBuilder();
+            Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
+            rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
 
-    return new SyncingResult(ByteArray.toJsonHex(startingBlockNum),
-        ByteArray.toJsonHex(currentBlockNum),
-        ByteArray.toJsonHex(highestBlockNum)
-    );
-  }
+            txBuilder.setRawData(rawBuilder);
+            tx = setTransactionPermissionId(args.getPermissionId(), txBuilder.build());
 
-  @Override
-  public BlockResult getUncleByBlockHashAndIndex(String blockHash, String index) {
-    logger.info("[sniper] getUncleByBlockHashAndIndex ");
-    return null;
-  }
+            TransactionJson transactionJson = new TransactionJson();
+            transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, false)));
 
-  @Override
-  public BlockResult getUncleByBlockNumberAndIndex(String blockNumOrTag, String index) {
-    logger.info("[sniper] getUncleByBlockNumberAndIndex ");
-    return null;
-  }
-
-  @Override
-  public String getUncleCountByBlockHash(String blockHash) {
-    logger.info("[sniper] getUncleByBlockNumberAndIndex ");
-    return "0x0";
-  }
-
-  @Override
-  public String getUncleCountByBlockNumber(String blockNumOrTag) {
-    return "0x0";
-  }
-
-  @Override
-  public List<Object> ethGetWork() {
-    Block block = wallet.getNowBlock();
-    String blockHash = null;
-
-    if (block != null) {
-      blockHash = ByteArray.toJsonHex(new BlockCapsule(block).getBlockId().getBytes());
+            return transactionJson;
+        } catch (JsonRpcInvalidParamsException e) {
+            throw new JsonRpcInvalidParamsException(e.getMessage());
+        } catch (ContractValidateException e) {
+            throw new JsonRpcInvalidRequestException(e.getMessage());
+        } catch (Exception e) {
+            throw new JsonRpcInternalException(e.getMessage());
+        }
     }
 
-    return Arrays.asList(
-        blockHash,
-        null,
-        null
-    );
-  }
+    // from and to should not be null
+    private TransactionJson buildTriggerSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
+        byte[] contractAddress = addressCompatibleToByteArray(args.getTo());
 
-  @Override
-  public String getHashRate() {
-    return "0x0";
-  }
+        TriggerSmartContract.Builder build = TriggerSmartContract.newBuilder();
+        TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
+        Return.Builder retBuilder = Return.newBuilder();
 
-  @Override
-  public boolean isMining() {
-    return wallet.isMining();
-  }
+        try {
 
-  @Override
-  public String[] getAccounts() {
-    return new String[0];
-  }
+            build.setOwnerAddress(ByteString.copyFrom(ownerAddress)).setContractAddress(ByteString.copyFrom(contractAddress));
 
-  private TransactionJson buildCreateSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-    try {
-      CreateSmartContract.Builder build = CreateSmartContract.newBuilder();
+            if (StringUtils.isNotEmpty(args.getData())) {
+                build.setData(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
+            } else {
+                build.setData(ByteString.copyFrom(new byte[0]));
+            }
 
-      build.setOwnerAddress(ByteString.copyFrom(ownerAddress));
+            build.setCallTokenValue(args.getTokenValue())
+                    .setTokenId(args.getTokenId())
+                    .setCallValue(args.parseValue());
 
-      build.setCallTokenValue(args.getTokenValue()).setTokenId(args.getTokenId());
+            Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.TriggerSmartContract).getInstance();
 
-      ABI.Builder abiBuilder = ABI.newBuilder();
-      if (StringUtils.isNotEmpty(args.getAbi())) {
-        String abiStr = "{" + "\"entrys\":" + args.getAbi() + "}";
-        JsonFormat.merge(abiStr, abiBuilder, args.isVisible());
-      }
+            Transaction.Builder txBuilder = tx.toBuilder();
+            Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
+            rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
+            txBuilder.setRawData(rawBuilder);
 
-      SmartContract.Builder smartBuilder = SmartContract.newBuilder();
-      smartBuilder
-          .setAbi(abiBuilder)
-          .setCallValue(args.parseValue())
-          .setConsumeUserResourcePercent(args.getConsumeUserResourcePercent())
-          .setOriginEnergyLimit(args.getOriginEnergyLimit());
+            Transaction trx = wallet.triggerContract(build.build(), new TransactionCapsule(txBuilder.build()), trxExtBuilder, retBuilder);
+            trx = setTransactionPermissionId(args.getPermissionId(), trx);
+            trxExtBuilder.setTransaction(trx);
+        } catch (JsonRpcInvalidParamsException e) {
+            throw new JsonRpcInvalidParamsException(e.getMessage());
+        } catch (ContractValidateException e) {
+            throw new JsonRpcInvalidRequestException(e.getMessage());
+        } catch (Exception e) {
+            String errString = JSON_ERROR;
+            if (e.getMessage() != null) {
+                errString = e.getMessage().replaceAll("[\"]", "'");
+            }
 
-      smartBuilder.setOriginAddress(ByteString.copyFrom(ownerAddress));
+            throw new JsonRpcInternalException(errString);
+        }
 
-      // bytecode + parameter
-      smartBuilder.setBytecode(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
+        String jsonString = Util.printTransaction(trxExtBuilder.build().getTransaction(),
+                args.isVisible());
+        TransactionJson transactionJson = new TransactionJson();
+        transactionJson.setTransaction(JSON.parseObject(jsonString));
 
-      if (StringUtils.isNotEmpty(args.getName())) {
-        smartBuilder.setName(args.getName());
-      }
-
-      build.setNewContract(smartBuilder);
-
-      Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.CreateSmartContract).getInstance();
-      Transaction.Builder txBuilder = tx.toBuilder();
-      Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
-      rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
-
-      txBuilder.setRawData(rawBuilder);
-      tx = setTransactionPermissionId(args.getPermissionId(), txBuilder.build());
-
-      TransactionJson transactionJson = new TransactionJson();
-      transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, false)));
-
-      logger.info("Debug build smart contract, builder: {}", build);
-      logger.info("Debug build smart contract, tx: {}", tx);
-      logger.info("Debug build smart contract, raw-data: {}", tx.getRawData());
-
-      return transactionJson;
-    } catch (JsonRpcInvalidParamsException e) {
-      throw new JsonRpcInvalidParamsException(e.getMessage());
-    } catch (ContractValidateException e) {
-      throw new JsonRpcInvalidRequestException(e.getMessage());
-    } catch (Exception e) {
-      throw new JsonRpcInternalException(e.getMessage());
-    }
-  }
-
-  // from and to should not be null
-  private TransactionJson buildTriggerSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-    byte[] contractAddress = addressCompatibleToByteArray(args.getTo());
-
-    TriggerSmartContract.Builder build = TriggerSmartContract.newBuilder();
-    TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
-    Return.Builder retBuilder = Return.newBuilder();
-
-    try {
-
-      build.setOwnerAddress(ByteString.copyFrom(ownerAddress)).setContractAddress(ByteString.copyFrom(contractAddress));
-
-      if (StringUtils.isNotEmpty(args.getData())) {
-        build.setData(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
-      } else {
-        build.setData(ByteString.copyFrom(new byte[0]));
-      }
-
-      build.setCallTokenValue(args.getTokenValue())
-          .setTokenId(args.getTokenId())
-          .setCallValue(args.parseValue());
-
-      Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.TriggerSmartContract).getInstance();
-
-      Transaction.Builder txBuilder = tx.toBuilder();
-      Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
-      rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
-      txBuilder.setRawData(rawBuilder);
-
-      Transaction trx = wallet.triggerContract(build.build(), new TransactionCapsule(txBuilder.build()), trxExtBuilder, retBuilder);
-      trx = setTransactionPermissionId(args.getPermissionId(), trx);
-      trxExtBuilder.setTransaction(trx);
-    } catch (JsonRpcInvalidParamsException e) {
-      throw new JsonRpcInvalidParamsException(e.getMessage());
-    } catch (ContractValidateException e) {
-      throw new JsonRpcInvalidRequestException(e.getMessage());
-    } catch (Exception e) {
-      String errString = JSON_ERROR;
-      if (e.getMessage() != null) {
-        errString = e.getMessage().replaceAll("[\"]", "'");
-      }
-
-      throw new JsonRpcInternalException(errString);
+        return transactionJson;
     }
 
-    String jsonString = Util.printTransaction(trxExtBuilder.build().getTransaction(),
-        args.isVisible());
-    TransactionJson transactionJson = new TransactionJson();
-    transactionJson.setTransaction(JSON.parseObject(jsonString));
+    private TransactionJson createTransactionJson(GeneratedMessageV3.Builder<?> build, ContractType contractTyp, BuildArguments args) throws JsonRpcInvalidRequestException, JsonRpcInternalException {
+        try {
+            Transaction tx = wallet
+                    .createTransactionCapsule(build.build(), contractTyp)
+                    .getInstance();
+            tx = setTransactionPermissionId(args.getPermissionId(), tx);
+            tx = setTransactionExtraData(args.getExtraData(), tx, args.isVisible());
 
-    return transactionJson;
-  }
+            TransactionJson transactionJson = new TransactionJson();
+            transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, args.isVisible())));
 
-  private TransactionJson createTransactionJson(GeneratedMessageV3.Builder<?> build, ContractType contractTyp, BuildArguments args) throws JsonRpcInvalidRequestException, JsonRpcInternalException {
-    try {
-      Transaction tx = wallet
-          .createTransactionCapsule(build.build(), contractTyp)
-          .getInstance();
-      tx = setTransactionPermissionId(args.getPermissionId(), tx);
-      tx = setTransactionExtraData(args.getExtraData(), tx, args.isVisible());
-
-      TransactionJson transactionJson = new TransactionJson();
-      transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, args.isVisible())));
-
-      return transactionJson;
-    } catch (ContractValidateException e) {
-      throw new JsonRpcInvalidRequestException(e.getMessage());
-    } catch (Exception e) {
-      throw new JsonRpcInternalException(e.getMessage());
-    }
-  }
-
-  private TransactionJson buildTransferContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-    long amount = args.parseValue();
-
-    TransferContract.Builder build = TransferContract.newBuilder();
-    build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
-        .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
-        .setAmount(amount);
-
-    return createTransactionJson(build, ContractType.TransferContract, args);
-  }
-
-  // tokenId and tokenValue should not be null
-  private TransactionJson buildTransferAssetContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-    byte[] tokenIdArr = ByteArray.fromString(String.valueOf(args.getTokenId()));
-    if (tokenIdArr == null) {
-      throw new JsonRpcInvalidParamsException("invalid param value: invalid tokenId");
+            return transactionJson;
+        } catch (ContractValidateException e) {
+            throw new JsonRpcInvalidRequestException(e.getMessage());
+        } catch (Exception e) {
+            throw new JsonRpcInternalException(e.getMessage());
+        }
     }
 
-    TransferAssetContract.Builder build = TransferAssetContract.newBuilder();
-    build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
-        .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
-        .setAssetName(ByteString.copyFrom(tokenIdArr))
-        .setAmount(args.getTokenValue());
+    private TransactionJson buildTransferContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
+        long amount = args.parseValue();
 
-    return createTransactionJson(build, ContractType.TransferAssetContract, args);
-  }
+        TransferContract.Builder build = TransferContract.newBuilder();
+        build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
+                .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
+                .setAmount(amount);
 
-  public RequestSource getSource() {
-    Chainbase.Cursor cursor = wallet.getCursor();
-    switch (cursor) {
-      case SOLIDITY:
-        return RequestSource.SOLIDITY;
-      case PBFT:
-        return RequestSource.PBFT;
-      default:
-        return RequestSource.FULLNODE;
-    }
-  }
-
-  public void disableInPBFT(String method) throws JsonRpcMethodNotFoundException {
-    if (getSource() == RequestSource.PBFT) {
-      String msg = String.format("the method %s does not exist/is not available in PBFT", method);
-      throw new JsonRpcMethodNotFoundException(msg);
-    }
-  }
-
-  @Override
-  public TransactionJson buildTransaction(BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException, JsonRpcMethodNotFoundException {
-    logger.info("[sniper] buildTransaction ==> {} ", args);
-
-    if (getSource() != RequestSource.FULLNODE) {
-      String msg = String.format("the method buildTransaction does not exist/is not available in %s", getSource().toString());
-      throw new JsonRpcMethodNotFoundException(msg);
+        return createTransactionJson(build, ContractType.TransferContract, args);
     }
 
-    byte[] fromAddressData;
-    try {
-      fromAddressData = addressCompatibleToByteArray(args.getFrom());
-    } catch (JsonRpcInvalidParamsException e) {
-      throw new JsonRpcInvalidRequestException(JSON_ERROR);
+    // tokenId and tokenValue should not be null
+    private TransactionJson buildTransferAssetContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
+        byte[] tokenIdArr = ByteArray.fromString(String.valueOf(args.getTokenId()));
+        if (tokenIdArr == null) {
+            throw new JsonRpcInvalidParamsException("invalid param value: invalid tokenId");
+        }
+
+        TransferAssetContract.Builder build = TransferAssetContract.newBuilder();
+        build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
+                .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
+                .setAssetName(ByteString.copyFrom(tokenIdArr))
+                .setAmount(args.getTokenValue());
+
+        return createTransactionJson(build, ContractType.TransferAssetContract, args);
     }
 
-    // check possible ContractType
-    ContractType contractType = args.getContractType(wallet);
-    switch (contractType.getNumber()) {
-      case ContractType.CreateSmartContract_VALUE:
-        return buildCreateSmartContractTransaction(fromAddressData, args);
-      case ContractType.TriggerSmartContract_VALUE:
-        return buildTriggerSmartContractTransaction(fromAddressData, args);
-      case ContractType.TransferContract_VALUE:
-        return buildTransferContractTransaction(fromAddressData, args);
-      case ContractType.TransferAssetContract_VALUE:
-        return buildTransferAssetContractTransaction(fromAddressData, args);
-      default:
-        break;
+    public RequestSource getSource() {
+        Chainbase.Cursor cursor = wallet.getCursor();
+        switch (cursor) {
+            case SOLIDITY:
+                return RequestSource.SOLIDITY;
+            case PBFT:
+                return RequestSource.PBFT;
+            default:
+                return RequestSource.FULLNODE;
+        }
     }
 
-    return null;
-  }
-
-  @Override
-  public boolean ethSubmitWork(String nonceHex, String headerHex, String digestHex) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSendTransaction => nonceHex{} headerHex {} digestHex {}", nonceHex, headerHex, digestHex);
-    throw new JsonRpcMethodNotFoundException("the method eth_submitWork does not exist/is not available");
-  }
-
-  @Override
-  public String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSendRawTransaction => {}", rawData);
-    SignedRawTransaction rawTransaction = (SignedRawTransaction) TransactionDecoder.decode(rawData);
-    String ownerAddress = recoverAddress(rawTransaction, Wallet.getAddressPreFixByte());
-
-    BuildArguments args = new BuildArguments();
-    args.setFrom(ownerAddress);
-    args.setGas(Numeric.toHexStringWithPrefix(rawTransaction.getGasLimit()));
-    args.setGasPrice(Numeric.toHexStringWithPrefix(rawTransaction.getGasPrice()));
-    args.setNonce(Numeric.toHexStringWithPrefix(rawTransaction.getNonce()));
-    args.setData(rawTransaction.getData());
-    args.setValue(Numeric.toHexStringWithPrefix(rawTransaction.getValue()));
-    args.setTo(rawTransaction.getTo());
-
-    try {
-      TransactionJson txJson = buildTransaction(args);
-      logger.info("eth_sendRawTransaction txjson: {}", txJson.getTransaction().toJSONString());
-      Transaction tx = Util.packTransaction(txJson.getTransaction().toJSONString(), false);
-      logger.info("eth_sendRawTransaction tx: {}", tx);
-      wallet.broadcastTransaction(tx);
-      logger.info("eth_sendRawTransaction broadcastTransaction done!");
-
-      return "0x" + org.tron.core.utils.TransactionUtil.getTransactionId(tx);
-    } catch (Exception e) {
-      logger.error("eth_sendRawTransaction error: ", e);
-      throw new JsonRpcMethodNotFoundException(e.getMessage());
-    }
-  }
-
-  public static String recoverAddress(SignedRawTransaction rawTransaction, long chainId) throws JsonRpcMethodNotFoundException {
-   try{
-     Sign.SignatureData signatureData = rawTransaction.getSignatureData();
-     byte realV = rawTransaction.getRealV(Numeric.toBigInt(signatureData.getV()));
-     signatureData = new Sign.SignatureData(realV, signatureData.getR(), signatureData.getS());
-     BigInteger pubKey = Sign.signedMessageToKey(TransactionEncoder.encode(rawTransaction, chainId), signatureData);
-     return Numeric.prependHexPrefix(Keys.getAddress(pubKey));
-   }catch (SignatureException e){
-     logger.error("Failure to recover address: ", e);
-     throw new JsonRpcMethodNotFoundException("Can not recover from address");
-   }
-  }
-
-
-  @Override
-  public String ethSendTransaction(CallArguments args) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSendTransaction => {}", args);
-    throw new JsonRpcMethodNotFoundException("the method eth_sendTransaction does not exist/is not available");
-  }
-
-  @Override
-  public String ethSign(String address, String msg) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSign => address {} msg {}", address, msg);
-    throw new JsonRpcMethodNotFoundException("the method eth_sign does not exist/is not available");
-  }
-
-  @Override
-  public String ethSignTransaction(CallArguments transactionArgs) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSignTransaction => CallArguments {}", transactionArgs);
-    throw new JsonRpcMethodNotFoundException("the method eth_signTransaction does not exist/is not available");
-  }
-
-  @Override
-  public String parityNextNonce(String address) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] parityNextNonce ==> {} ", address);
-    throw new JsonRpcMethodNotFoundException("the method parity_nextNonce does not exist/is not available");
-  }
-
-  //@TODO
-  @Override
-  public String getSendTransactionCountOfAddress(String address, String blockNumOrTag) throws JsonRpcMethodNotFoundException, JsonRpcInvalidParamsException {
-    byte[] addressByte = addressCompatibleToByteArray(address);
-    List<Transaction> transactions = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
-    Long count = transactions.stream()
-            .map(Transaction::getRawData)
-            .map(Transaction.raw::getContractList)
-            .flatMap(Collection::stream)
-            .map(TransactionUtil::getOwner)
-            .filter(owner -> Arrays.equals(owner,addressByte))
-            .count();
-    logger.info("[sniper] getSendTransactionCountOfAddress ==> {}-{}-{}", address, blockNumOrTag, count);
-    return ByteArray.toJsonHex(count);
-  }
-
-  @Override
-  public String[] getCompilers() throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] getCompilers... ");
-    throw new JsonRpcMethodNotFoundException("the method eth_getCompilers does not exist/is not available");
-  }
-
-  @Override
-  public CompilationResult ethCompileSolidity(String contract) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethCompileSolidity ==> {} ", contract);
-    throw new JsonRpcMethodNotFoundException("the method eth_compileSolidity does not exist/is not available");
-  }
-
-  @Override
-  public CompilationResult ethCompileLLL(String contract) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethCompileLLL ==> {} ", contract);
-    throw new JsonRpcMethodNotFoundException("the method eth_compileLLL does not exist/is not available");
-  }
-
-  @Override
-  public CompilationResult ethCompileSerpent(String contract) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethCompileSerpent ==> {} ", contract);
-    throw new JsonRpcMethodNotFoundException("the method eth_compileSerpent does not exist/is not available");
-  }
-
-  @Override
-  public CompilationResult ethSubmitHashrate(String hashrate, String id) throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] ethSubmitHashrate ==> {} ", hashrate);
-    throw new JsonRpcMethodNotFoundException("the method eth_submit Hashrate does not exist/is not available");
-  }
-
-  @Override
-  public String newFilter(FilterRequest fr) throws JsonRpcInvalidParamsException, JsonRpcMethodNotFoundException {
-    logger.info("[sniper] newFilter ==> {} ", fr);
-
-    disableInPBFT("eth_newFilter");
-
-    Map<String, LogFilterAndResult> eventFilter2Result;
-    if (getSource() == RequestSource.FULLNODE) {
-      eventFilter2Result = eventFilter2ResultFull;
-    } else {
-      eventFilter2Result = eventFilter2ResultSolidity;
+    public void disableInPBFT(String method) throws JsonRpcMethodNotFoundException {
+        if (getSource() == RequestSource.PBFT) {
+            String msg = String.format("the method %s does not exist/is not available in PBFT", method);
+            throw new JsonRpcMethodNotFoundException(msg);
+        }
     }
 
-    long currentMaxFullNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
-    LogFilterAndResult logFilterAndResult = new LogFilterAndResult(fr, currentMaxFullNum, wallet);
-    String filterID = generateFilterId();
-    eventFilter2Result.put(filterID, logFilterAndResult);
-    return ByteArray.toJsonHex(filterID);
-  }
+    @Override
+    public TransactionJson buildTransaction(BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException, JsonRpcMethodNotFoundException {
+        logger.info("[sniper] buildTransaction ==> {} ", args);
 
-  @Override
-  public String newBlockFilter() throws JsonRpcMethodNotFoundException {
-    logger.info("[sniper] newBlockFilter...");
+        if (getSource() != RequestSource.FULLNODE) {
+            String msg = String.format("the method buildTransaction does not exist/is not available in %s", getSource().toString());
+            throw new JsonRpcMethodNotFoundException(msg);
+        }
 
-    disableInPBFT("eth_newBlockFilter");
+        byte[] fromAddressData;
+        try {
+            fromAddressData = addressCompatibleToByteArray(args.getFrom());
+        } catch (JsonRpcInvalidParamsException e) {
+            throw new JsonRpcInvalidRequestException(JSON_ERROR);
+        }
 
-    Map<String, BlockFilterAndResult> blockFilter2Result;
-    if (getSource() == RequestSource.FULLNODE) {
-      blockFilter2Result = blockFilter2ResultFull;
-    } else {
-      blockFilter2Result = blockFilter2ResultSolidity;
+        // check possible ContractType
+        ContractType contractType = args.getContractType(wallet);
+        switch (contractType.getNumber()) {
+            case ContractType.CreateSmartContract_VALUE:
+                return buildCreateSmartContractTransaction(fromAddressData, args);
+            case ContractType.TriggerSmartContract_VALUE:
+                return buildTriggerSmartContractTransaction(fromAddressData, args);
+            case ContractType.TransferContract_VALUE:
+                return buildTransferContractTransaction(fromAddressData, args);
+            case ContractType.TransferAssetContract_VALUE:
+                return buildTransferAssetContractTransaction(fromAddressData, args);
+            default:
+                break;
+        }
+
+        return null;
     }
 
-    BlockFilterAndResult filterAndResult = new BlockFilterAndResult();
-    String filterID = generateFilterId();
-    blockFilter2Result.put(filterID, filterAndResult);
-    return ByteArray.toJsonHex(filterID);
-  }
-
-  @Override
-  public boolean uninstallFilter(String filterId) throws ItemNotFoundException,
-      JsonRpcMethodNotFoundException {
-    disableInPBFT("eth_uninstallFilter");
-
-    Map<String, BlockFilterAndResult> blockFilter2Result;
-    Map<String, LogFilterAndResult> eventFilter2Result;
-    if (getSource() == RequestSource.FULLNODE) {
-      blockFilter2Result = blockFilter2ResultFull;
-      eventFilter2Result = eventFilter2ResultFull;
-    } else {
-      blockFilter2Result = blockFilter2ResultSolidity;
-      eventFilter2Result = eventFilter2ResultSolidity;
+    @Override
+    public boolean ethSubmitWork(String nonceHex, String headerHex, String digestHex) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSendTransaction => nonceHex{} headerHex {} digestHex {}", nonceHex, headerHex, digestHex);
+        throw new JsonRpcMethodNotFoundException("the method eth_submitWork does not exist/is not available");
     }
 
-    filterId = ByteArray.fromHex(filterId);
-    if (eventFilter2Result.containsKey(filterId)) {
-      eventFilter2Result.remove(filterId);
-    } else if (blockFilter2Result.containsKey(filterId)) {
-      blockFilter2Result.remove(filterId);
-    } else {
-      throw new ItemNotFoundException(FILTER_NOT_FOUND);
+    @Override
+    public String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSendRawTransaction => {}", rawData);
+        try {
+            SignedRawTransaction rawTransaction = (SignedRawTransaction) TransactionDecoder.decode(rawData);
+
+            BuildArguments args = new BuildArguments();
+            args.setFrom(rawTransaction.getFrom());
+            args.setGas(Numeric.toHexStringWithPrefix(rawTransaction.getGasLimit()));
+            args.setGasPrice(Numeric.toHexStringWithPrefix(rawTransaction.getGasPrice()));
+            args.setNonce(Numeric.toHexStringWithPrefix(rawTransaction.getNonce()));
+            args.setData(rawTransaction.getData());
+            args.setValue(Numeric.toHexStringWithPrefix(rawTransaction.getValue()));
+            args.setTo(rawTransaction.getTo());
+            args.setName("No name");
+            args.setConsumeUserResourcePercent(10L);//@TODO set default
+            args.setOriginEnergyLimit(1_000_000L);//@TODO set default
+
+
+            TransactionJson txJson = buildTransaction(args);
+            Transaction tx = Util.packTransaction(txJson.getTransaction().toJSONString(), false);
+            Objects.requireNonNull(tx, "Tx null");
+
+            logger.info("eth_sendRawTransaction tx: {}", tx);
+            wallet.broadcastTransaction(tx, true);
+
+            return "0x" + org.tron.core.utils.TransactionUtil.getTransactionId(tx);
+        } catch (Exception e) {
+            logger.error("eth_sendRawTransaction error: ", e);
+            throw new JsonRpcMethodNotFoundException(e.getMessage());
+        }
     }
 
-    return true;
-  }
-
-  @Override
-  public Object[] getFilterChanges(String filterId) throws ItemNotFoundException,
-      JsonRpcMethodNotFoundException {
-    disableInPBFT("eth_getFilterChanges");
-
-    Map<String, BlockFilterAndResult> blockFilter2Result;
-    Map<String, LogFilterAndResult> eventFilter2Result;
-    if (getSource() == RequestSource.FULLNODE) {
-      blockFilter2Result = blockFilter2ResultFull;
-      eventFilter2Result = eventFilter2ResultFull;
-    } else {
-      blockFilter2Result = blockFilter2ResultSolidity;
-      eventFilter2Result = eventFilter2ResultSolidity;
+    @Override
+    public String ethSendTransaction(CallArguments args) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSendTransaction => {}", args);
+        throw new JsonRpcMethodNotFoundException("the method eth_sendTransaction does not exist/is not available");
     }
 
-    filterId = ByteArray.fromHex(filterId);
-
-    return getFilterResult(filterId, blockFilter2Result, eventFilter2Result);
-  }
-
-  @Override
-  public LogFilterElement[] getLogs(FilterRequest fr) throws JsonRpcInvalidParamsException,
-      ExecutionException, InterruptedException, BadItemException, ItemNotFoundException,
-      JsonRpcMethodNotFoundException, JsonRpcTooManyResultException {
-    disableInPBFT("eth_getLogs");
-
-    long currentMaxBlockNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
-    //convert FilterRequest to LogFilterWrapper
-    LogFilterWrapper logFilterWrapper = new LogFilterWrapper(fr, currentMaxBlockNum, wallet);
-
-    return getLogsByLogFilterWrapper(logFilterWrapper, currentMaxBlockNum);
-  }
-
-  @Override
-  public LogFilterElement[] getFilterLogs(String filterId) throws ExecutionException,
-      InterruptedException, BadItemException, ItemNotFoundException,
-      JsonRpcMethodNotFoundException, JsonRpcTooManyResultException {
-    disableInPBFT("eth_getFilterLogs");
-
-    Map<String, LogFilterAndResult> eventFilter2Result;
-    if (getSource() == RequestSource.FULLNODE) {
-      eventFilter2Result = eventFilter2ResultFull;
-    } else {
-      eventFilter2Result = eventFilter2ResultSolidity;
+    @Override
+    public String ethSign(String address, String msg) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSign => address {} msg {}", address, msg);
+        throw new JsonRpcMethodNotFoundException("the method eth_sign does not exist/is not available");
     }
 
-    filterId = ByteArray.fromHex(filterId);
-    if (!eventFilter2Result.containsKey(filterId)) {
-      throw new ItemNotFoundException(FILTER_NOT_FOUND);
+    @Override
+    public String ethSignTransaction(CallArguments transactionArgs) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSignTransaction => CallArguments {}", transactionArgs);
+        throw new JsonRpcMethodNotFoundException("the method eth_signTransaction does not exist/is not available");
     }
 
-    LogFilterWrapper logFilterWrapper = eventFilter2Result.get(filterId).getLogFilterWrapper();
-    long currentMaxBlockNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
-
-    return getLogsByLogFilterWrapper(logFilterWrapper, currentMaxBlockNum);
-  }
-
-  private LogFilterElement[] getLogsByLogFilterWrapper(LogFilterWrapper logFilterWrapper,
-      long currentMaxBlockNum) throws JsonRpcTooManyResultException, ExecutionException,
-      InterruptedException, BadItemException, ItemNotFoundException {
-    //query possible block
-    LogBlockQuery logBlockQuery = new LogBlockQuery(logFilterWrapper, manager.getChainBaseManager()
-        .getSectionBloomStore(), currentMaxBlockNum, sectionExecutor);
-    List<Long> possibleBlockList = logBlockQuery.getPossibleBlock();
-
-    //match event from block one by one exactly
-    LogMatch logMatch =
-        new LogMatch(logFilterWrapper, possibleBlockList, manager);
-    return logMatch.matchBlockOneByOne();
-  }
-
-  public static Object[] getFilterResult(String filterId, Map<String, BlockFilterAndResult>
-      blockFilter2Result, Map<String, LogFilterAndResult> eventFilter2Result)
-      throws ItemNotFoundException {
-    Object[] result;
-
-    if (blockFilter2Result.containsKey(filterId)) {
-      List<String> blockHashList = blockFilter2Result.get(filterId).popAll();
-      result = blockHashList.toArray(new String[blockHashList.size()]);
-      blockFilter2Result.get(filterId).updateExpireTime();
-
-    } else if (eventFilter2Result.containsKey(filterId)) {
-      List<LogFilterElement> logElementList = eventFilter2Result.get(filterId).popAll();
-      result = logElementList.toArray(new LogFilterElement[0]);
-      eventFilter2Result.get(filterId).updateExpireTime();
-
-    } else {
-      throw new ItemNotFoundException(FILTER_NOT_FOUND);
+    @Override
+    public String parityNextNonce(String address) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] parityNextNonce ==> {} ", address);
+        throw new JsonRpcMethodNotFoundException("the method parity_nextNonce does not exist/is not available");
     }
 
-    return result;
-  }
+    //@TODO
+    @Override
+    public String getSendTransactionCountOfAddress(String address, String blockNumOrTag) throws JsonRpcMethodNotFoundException, JsonRpcInvalidParamsException {
+        byte[] addressByte = addressCompatibleToByteArray(address);
+        List<Transaction> transactions = wallet.getTransactionsByJsonBlockId(blockNumOrTag);
+        Long count = transactions.stream()
+                .map(Transaction::getRawData)
+                .map(Transaction.raw::getContractList)
+                .flatMap(Collection::stream)
+                .map(TransactionUtil::getOwner)
+                .filter(owner -> Arrays.equals(owner, addressByte))
+                .count();
+        logger.info("[sniper] getSendTransactionCountOfAddress ==> {}-{}-{}", address, blockNumOrTag, count);
+        return ByteArray.toJsonHex(count);
+    }
+
+    @Override
+    public String[] getCompilers() throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] getCompilers... ");
+        throw new JsonRpcMethodNotFoundException("the method eth_getCompilers does not exist/is not available");
+    }
+
+    @Override
+    public CompilationResult ethCompileSolidity(String contract) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethCompileSolidity ==> {} ", contract);
+        throw new JsonRpcMethodNotFoundException("the method eth_compileSolidity does not exist/is not available");
+    }
+
+    @Override
+    public CompilationResult ethCompileLLL(String contract) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethCompileLLL ==> {} ", contract);
+        throw new JsonRpcMethodNotFoundException("the method eth_compileLLL does not exist/is not available");
+    }
+
+    @Override
+    public CompilationResult ethCompileSerpent(String contract) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethCompileSerpent ==> {} ", contract);
+        throw new JsonRpcMethodNotFoundException("the method eth_compileSerpent does not exist/is not available");
+    }
+
+    @Override
+    public CompilationResult ethSubmitHashrate(String hashrate, String id) throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] ethSubmitHashrate ==> {} ", hashrate);
+        throw new JsonRpcMethodNotFoundException("the method eth_submit Hashrate does not exist/is not available");
+    }
+
+    @Override
+    public String newFilter(FilterRequest fr) throws JsonRpcInvalidParamsException, JsonRpcMethodNotFoundException {
+        logger.info("[sniper] newFilter ==> {} ", fr);
+
+        disableInPBFT("eth_newFilter");
+
+        Map<String, LogFilterAndResult> eventFilter2Result;
+        if (getSource() == RequestSource.FULLNODE) {
+            eventFilter2Result = eventFilter2ResultFull;
+        } else {
+            eventFilter2Result = eventFilter2ResultSolidity;
+        }
+
+        long currentMaxFullNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
+        LogFilterAndResult logFilterAndResult = new LogFilterAndResult(fr, currentMaxFullNum, wallet);
+        String filterID = generateFilterId();
+        eventFilter2Result.put(filterID, logFilterAndResult);
+        return ByteArray.toJsonHex(filterID);
+    }
+
+    @Override
+    public String newBlockFilter() throws JsonRpcMethodNotFoundException {
+        logger.info("[sniper] newBlockFilter...");
+
+        disableInPBFT("eth_newBlockFilter");
+
+        Map<String, BlockFilterAndResult> blockFilter2Result;
+        if (getSource() == RequestSource.FULLNODE) {
+            blockFilter2Result = blockFilter2ResultFull;
+        } else {
+            blockFilter2Result = blockFilter2ResultSolidity;
+        }
+
+        BlockFilterAndResult filterAndResult = new BlockFilterAndResult();
+        String filterID = generateFilterId();
+        blockFilter2Result.put(filterID, filterAndResult);
+        return ByteArray.toJsonHex(filterID);
+    }
+
+    @Override
+    public boolean uninstallFilter(String filterId) throws ItemNotFoundException,
+            JsonRpcMethodNotFoundException {
+        disableInPBFT("eth_uninstallFilter");
+
+        Map<String, BlockFilterAndResult> blockFilter2Result;
+        Map<String, LogFilterAndResult> eventFilter2Result;
+        if (getSource() == RequestSource.FULLNODE) {
+            blockFilter2Result = blockFilter2ResultFull;
+            eventFilter2Result = eventFilter2ResultFull;
+        } else {
+            blockFilter2Result = blockFilter2ResultSolidity;
+            eventFilter2Result = eventFilter2ResultSolidity;
+        }
+
+        filterId = ByteArray.fromHex(filterId);
+        if (eventFilter2Result.containsKey(filterId)) {
+            eventFilter2Result.remove(filterId);
+        } else if (blockFilter2Result.containsKey(filterId)) {
+            blockFilter2Result.remove(filterId);
+        } else {
+            throw new ItemNotFoundException(FILTER_NOT_FOUND);
+        }
+
+        return true;
+    }
+
+    @Override
+    public Object[] getFilterChanges(String filterId) throws ItemNotFoundException,
+            JsonRpcMethodNotFoundException {
+        disableInPBFT("eth_getFilterChanges");
+
+        Map<String, BlockFilterAndResult> blockFilter2Result;
+        Map<String, LogFilterAndResult> eventFilter2Result;
+        if (getSource() == RequestSource.FULLNODE) {
+            blockFilter2Result = blockFilter2ResultFull;
+            eventFilter2Result = eventFilter2ResultFull;
+        } else {
+            blockFilter2Result = blockFilter2ResultSolidity;
+            eventFilter2Result = eventFilter2ResultSolidity;
+        }
+
+        filterId = ByteArray.fromHex(filterId);
+
+        return getFilterResult(filterId, blockFilter2Result, eventFilter2Result);
+    }
+
+    @Override
+    public LogFilterElement[] getLogs(FilterRequest fr) throws JsonRpcInvalidParamsException,
+            ExecutionException, InterruptedException, BadItemException, ItemNotFoundException,
+            JsonRpcMethodNotFoundException, JsonRpcTooManyResultException {
+        disableInPBFT("eth_getLogs");
+
+        long currentMaxBlockNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
+        //convert FilterRequest to LogFilterWrapper
+        LogFilterWrapper logFilterWrapper = new LogFilterWrapper(fr, currentMaxBlockNum, wallet);
+
+        return getLogsByLogFilterWrapper(logFilterWrapper, currentMaxBlockNum);
+    }
+
+    @Override
+    public LogFilterElement[] getFilterLogs(String filterId) throws ExecutionException,
+            InterruptedException, BadItemException, ItemNotFoundException,
+            JsonRpcMethodNotFoundException, JsonRpcTooManyResultException {
+        disableInPBFT("eth_getFilterLogs");
+
+        Map<String, LogFilterAndResult> eventFilter2Result;
+        if (getSource() == RequestSource.FULLNODE) {
+            eventFilter2Result = eventFilter2ResultFull;
+        } else {
+            eventFilter2Result = eventFilter2ResultSolidity;
+        }
+
+        filterId = ByteArray.fromHex(filterId);
+        if (!eventFilter2Result.containsKey(filterId)) {
+            throw new ItemNotFoundException(FILTER_NOT_FOUND);
+        }
+
+        LogFilterWrapper logFilterWrapper = eventFilter2Result.get(filterId).getLogFilterWrapper();
+        long currentMaxBlockNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
+
+        return getLogsByLogFilterWrapper(logFilterWrapper, currentMaxBlockNum);
+    }
+
+    private LogFilterElement[] getLogsByLogFilterWrapper(LogFilterWrapper logFilterWrapper,
+                                                         long currentMaxBlockNum) throws JsonRpcTooManyResultException, ExecutionException,
+            InterruptedException, BadItemException, ItemNotFoundException {
+        //query possible block
+        LogBlockQuery logBlockQuery = new LogBlockQuery(logFilterWrapper, manager.getChainBaseManager()
+                .getSectionBloomStore(), currentMaxBlockNum, sectionExecutor);
+        List<Long> possibleBlockList = logBlockQuery.getPossibleBlock();
+
+        //match event from block one by one exactly
+        LogMatch logMatch =
+                new LogMatch(logFilterWrapper, possibleBlockList, manager);
+        return logMatch.matchBlockOneByOne();
+    }
+
+    public static Object[] getFilterResult(String filterId, Map<String, BlockFilterAndResult>
+            blockFilter2Result, Map<String, LogFilterAndResult> eventFilter2Result)
+            throws ItemNotFoundException {
+        Object[] result;
+
+        if (blockFilter2Result.containsKey(filterId)) {
+            List<String> blockHashList = blockFilter2Result.get(filterId).popAll();
+            result = blockHashList.toArray(new String[blockHashList.size()]);
+            blockFilter2Result.get(filterId).updateExpireTime();
+
+        } else if (eventFilter2Result.containsKey(filterId)) {
+            List<LogFilterElement> logElementList = eventFilter2Result.get(filterId).popAll();
+            result = logElementList.toArray(new LogFilterElement[0]);
+            eventFilter2Result.get(filterId).updateExpireTime();
+
+        } else {
+            throw new ItemNotFoundException(FILTER_NOT_FOUND);
+        }
+
+        return result;
+    }
 
 }

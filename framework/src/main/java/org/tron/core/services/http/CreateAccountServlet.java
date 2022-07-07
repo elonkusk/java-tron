@@ -24,9 +24,7 @@ public class CreateAccountServlet extends RateLimiterServlet {
       PostParams params = PostParams.getPostParams(request);
       AccountCreateContract.Builder build = AccountCreateContract.newBuilder();
       JsonFormat.merge(params.getParams(), build, params.isVisible());
-      Transaction tx = wallet
-          .createTransactionCapsule(build.build(), ContractType.AccountCreateContract)
-          .getInstance();
+      Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.AccountCreateContract).getInstance();
 
       JSONObject input = JSONObject.parseObject(params.getParams());
       tx = Util.setTransactionPermissionId(input, tx);

@@ -403,8 +403,7 @@ public class Wallet {
         blockId = chainBaseManager.getSolidBlockId();
       }
       trx.setReference(blockId.getNum(), blockId.getBytes());
-      long expiration = chainBaseManager.getHeadBlockTimeStamp() + Args.getInstance()
-          .getTrxExpirationTimeInMilliseconds();
+      long expiration = chainBaseManager.getHeadBlockTimeStamp() + Args.getInstance().getTrxExpirationTimeInMilliseconds();
       trx.setExpiration(expiration);
       trx.setTimestamp();
     } catch (Exception e) {
@@ -477,9 +476,17 @@ public class Wallet {
   /**
    * Broadcast a transaction.
    */
-  public GrpcAPI.Return broadcastTransaction(Transaction signedTransaction) {
+  public GrpcAPI.Return broadcastTransaction(Transaction signedTransaction){
+    return this.broadcastTransaction(signedTransaction, false);
+  }
+
+  /**
+   * Broadcast a transaction.
+   */
+  public GrpcAPI.Return broadcastTransaction(Transaction signedTransaction, boolean isVerified) {
     GrpcAPI.Return.Builder builder = GrpcAPI.Return.newBuilder();
     TransactionCapsule trx = new TransactionCapsule(signedTransaction);
+    trx.setVerified(isVerified);
     trx.setTime(System.currentTimeMillis());
     Sha256Hash txID = trx.getTransactionId();
     try {
@@ -497,8 +504,7 @@ public class Wallet {
             .count();
 
         if (count < minEffectiveConnection) {
-          String info = "Effective connection:" + count + " lt minEffectiveConnection:"
-              + minEffectiveConnection;
+          String info = "Effective connection:" + count + " lt minEffectiveConnection:" + minEffectiveConnection;
           logger.warn("Broadcast transaction {} has failed. {}.", txID, info);
           return builder.setResult(false).setCode(response_code.NOT_ENOUGH_EFFECTIVE_CONNECTION)
               .setMessage(ByteString.copyFromUtf8(info))
@@ -508,15 +514,13 @@ public class Wallet {
 
       if (dbManager.isTooManyPending()) {
         logger.warn("Broadcast transaction {} has failed, too many pending.", txID);
-        return builder.setResult(false).setCode(response_code.SERVER_BUSY)
-            .setMessage(ByteString.copyFromUtf8("Server busy.")).build();
+        return builder.setResult(false).setCode(response_code.SERVER_BUSY).setMessage(ByteString.copyFromUtf8("Server busy.")).build();
       }
 
       if (trxCacheEnable) {
         if (dbManager.getTransactionIdCache().getIfPresent(txID) != null) {
           logger.warn("Broadcast transaction {} has failed, it already exists.", txID);
-          return builder.setResult(false).setCode(response_code.DUP_TRANSACTION_ERROR)
-              .setMessage(ByteString.copyFromUtf8("Transaction already exists.")).build();
+          return builder.setResult(false).setCode(response_code.DUP_TRANSACTION_ERROR).setMessage(ByteString.copyFromUtf8("Transaction already exists.")).build();
         } else {
           dbManager.getTransactionIdCache().put(txID, true);
         }
@@ -528,17 +532,14 @@ public class Wallet {
       dbManager.pushTransaction(trx);
       int num = tronNetService.fastBroadcastTransaction(message);
       if (num == 0 && minEffectiveConnection != 0) {
-        return builder.setResult(false).setCode(response_code.NOT_ENOUGH_EFFECTIVE_CONNECTION)
-            .setMessage(ByteString.copyFromUtf8("P2P broadcast failed.")).build();
+        return builder.setResult(false).setCode(response_code.NOT_ENOUGH_EFFECTIVE_CONNECTION).setMessage(ByteString.copyFromUtf8("P2P broadcast failed.")).build();
       } else {
         logger.info("Broadcast transaction {} to {} peers successfully.", txID, num);
         return builder.setResult(true).setCode(response_code.SUCCESS).build();
       }
     } catch (ValidateSignatureException e) {
       logger.error(BROADCAST_TRANS_FAILED, txID, e.getMessage());
-      return builder.setResult(false).setCode(response_code.SIGERROR)
-          .setMessage(ByteString.copyFromUtf8("Validate signature error: " + e.getMessage()))
-          .build();
+      return builder.setResult(false).setCode(response_code.SIGERROR).setMessage(ByteString.copyFromUtf8("Validate signature error: " + e.getMessage())).build();
     } catch (ContractValidateException e) {
       logger.error(BROADCAST_TRANS_FAILED, txID, e.getMessage());
       return builder.setResult(false).setCode(response_code.CONTRACT_VALIDATE_ERROR)

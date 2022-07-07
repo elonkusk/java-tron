@@ -680,7 +680,7 @@ public class Manager {
             ByteArray.toLong(refBlockNumBytes), Hex.toHexString(refBlockHash),
             Hex.toHexString(blockHash),
             chainBaseManager.getSolidBlockId().getString(),
-            chainBaseManager.getHeadBlockId().getString()).toString();
+            chainBaseManager.getHeadBlockId().getString());
         logger.info(str);
         throw new TaposException(str);
       }
@@ -741,23 +741,19 @@ public class Manager {
       TooBigTransactionException, TransactionExpirationException,
       ReceiptCheckErrException, VMIllegalException, TooBigTransactionResultException {
 
-    if (isShieldedTransaction(trx.getInstance()) && !Args.getInstance()
-        .isFullNodeAllowShieldedTransactionArgs()) {
+    if (isShieldedTransaction(trx.getInstance()) && !CommonParameter.getInstance().isFullNodeAllowShieldedTransactionArgs()) {
       return true;
     }
 
     pushTransactionQueue.add(trx);
-    Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, 1,
-        MetricLabels.Gauge.QUEUE_QUEUED);
+    Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, 1, MetricLabels.Gauge.QUEUE_QUEUED);
     try {
-      if (!trx.validateSignature(chainBaseManager.getAccountStore(),
-          chainBaseManager.getDynamicPropertiesStore())) {
+      if (!trx.validateSignature(chainBaseManager.getAccountStore(), chainBaseManager.getDynamicPropertiesStore())) {
         throw new ValidateSignatureException("trans sig validate failed");
       }
 
       synchronized (this) {
-        if (isShieldedTransaction(trx.getInstance())
-            && shieldedTransInPendingCounts.get() >= shieldedTransInPendingMaxCounts) {
+        if (isShieldedTransaction(trx.getInstance()) && shieldedTransInPendingCounts.get() >= shieldedTransInPendingMaxCounts) {
           return false;
         }
         if (!session.valid()) {
@@ -768,8 +764,7 @@ public class Manager {
           processTransaction(trx, null);
           trx.setTrxTrace(null);
           pendingTransactions.add(trx);
-          Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, 1,
-              MetricLabels.Gauge.QUEUE_PENDING);
+          Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, 1, MetricLabels.Gauge.QUEUE_PENDING);
           tmpSession.merge();
         }
         if (isShieldedTransaction(trx.getInstance())) {
@@ -1292,13 +1287,11 @@ public class Manager {
 
     validateDup(trxCap);
 
-    if (!trxCap.validateSignature(chainBaseManager.getAccountStore(),
-        chainBaseManager.getDynamicPropertiesStore())) {
+    if (!trxCap.validateSignature(chainBaseManager.getAccountStore(), chainBaseManager.getDynamicPropertiesStore())) {
       throw new ValidateSignatureException("transaction signature validate failed");
     }
 
-    TransactionTrace trace = new TransactionTrace(trxCap, StoreFactory.getInstance(),
-        new RuntimeImpl());
+    TransactionTrace trace = new TransactionTrace(trxCap, StoreFactory.getInstance(), new RuntimeImpl());
     trxCap.setTrxTrace(trace);
 
     consumeBandwidth(trxCap, trace);

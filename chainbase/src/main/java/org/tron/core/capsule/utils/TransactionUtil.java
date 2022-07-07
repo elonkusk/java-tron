@@ -108,8 +108,7 @@ public class TransactionUtil {
     builder.setWithdrawAmount(programResult.getRet().getWithdrawAmount());
     builder.setExchangeReceivedAmount(programResult.getRet().getExchangeReceivedAmount());
     builder.setExchangeInjectAnotherAmount(programResult.getRet().getExchangeInjectAnotherAmount());
-    builder.setExchangeWithdrawAnotherAmount(
-        programResult.getRet().getExchangeWithdrawAnotherAmount());
+    builder.setExchangeWithdrawAnotherAmount(programResult.getRet().getExchangeWithdrawAnotherAmount());
     builder.setShieldedTransactionFee(programResult.getRet().getShieldedTransactionFee());
     builder.setOrderId(programResult.getRet().getOrderId());
     builder.addAllOrderDetails(programResult.getRet().getOrderDetailsList());
