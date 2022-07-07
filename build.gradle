@@ -51,6 +51,13 @@ subprojects {
         compile "org.apache.commons:commons-collections4:4.0"
         compile group: 'joda-time', name: 'joda-time', version: '2.3'
 
+        //web3
+        compile group: 'org.web3j', name: 'rlp', version: '5.0.0'
+        compile group: 'org.web3j', name: 'utils', version: '3.5.0'
+        compile group: 'org.web3j', name: 'core', version: '5.0.0'
+        compile group: 'org.web3j', name: 'abi', version: '5.0.0'
+        compile group: 'org.web3j', name: 'crypto', version: '5.0.0'
+
     }
 
     task sourcesJar(type: Jar, dependsOn: classes) {

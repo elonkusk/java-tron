@@ -1,28 +1,8 @@
 package org.tron.core.services.jsonrpc;
 
-import static org.tron.core.Wallet.CONTRACT_VALIDATE_ERROR;
-import static org.tron.core.Wallet.CONTRACT_VALIDATE_EXCEPTION;
-import static org.tron.core.services.http.Util.setTransactionExtraData;
-import static org.tron.core.services.http.Util.setTransactionPermissionId;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.addressCompatibleToByteArray;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.generateFilterId;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.getEnergyUsageTotal;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.getTransactionIndex;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.getTxID;
-import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.triggerCallContract;
-
 import com.alibaba.fastjson.JSON;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -43,33 +23,13 @@ import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.capsule.utils.TransactionUtil;
 import org.tron.core.db.Manager;
 import org.tron.core.db2.core.Chainbase;
-import org.tron.core.exception.BadItemException;
-import org.tron.core.exception.ContractExeException;
-import org.tron.core.exception.ContractValidateException;
-import org.tron.core.exception.HeaderNotFound;
-import org.tron.core.exception.ItemNotFoundException;
-import org.tron.core.exception.JsonRpcInternalException;
-import org.tron.core.exception.JsonRpcInvalidParamsException;
-import org.tron.core.exception.JsonRpcInvalidRequestException;
-import org.tron.core.exception.JsonRpcMethodNotFoundException;
-import org.tron.core.exception.JsonRpcTooManyResultException;
-import org.tron.core.exception.VMIllegalException;
+import org.tron.core.exception.*;
 import org.tron.core.services.NodeInfoService;
 import org.tron.core.services.http.JsonFormat;
 import org.tron.core.services.http.Util;
-import org.tron.core.services.jsonrpc.filters.BlockFilterAndResult;
-import org.tron.core.services.jsonrpc.filters.LogBlockQuery;
-import org.tron.core.services.jsonrpc.filters.LogFilter;
-import org.tron.core.services.jsonrpc.filters.LogFilterAndResult;
-import org.tron.core.services.jsonrpc.filters.LogFilterWrapper;
-import org.tron.core.services.jsonrpc.filters.LogMatch;
-import org.tron.core.services.jsonrpc.types.BlockResult;
-import org.tron.core.services.jsonrpc.types.BuildArguments;
-import org.tron.core.services.jsonrpc.types.CallArguments;
-import org.tron.core.services.jsonrpc.types.TransactionReceipt;
-import org.tron.core.services.jsonrpc.types.TransactionResult;
+import org.tron.core.services.jsonrpc.filters.*;
+import org.tron.core.services.jsonrpc.types.*;
 import org.tron.core.store.StorageRowStore;
-import org.tron.core.vm.PrecompiledContracts;
 import org.tron.core.vm.program.Storage;
 import org.tron.program.Version;
 import org.tron.protos.Protocol.Account;
@@ -84,6 +44,25 @@ import org.tron.protos.contract.SmartContractOuterClass.SmartContract;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContract.ABI;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContractDataWrapper;
 import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
+import org.web3j.crypto.*;
+import org.web3j.utils.Numeric;
+
+import java.math.BigInteger;
+import java.security.SignatureException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.tron.core.Wallet.CONTRACT_VALIDATE_ERROR;
+import static org.tron.core.Wallet.CONTRACT_VALIDATE_EXCEPTION;
+import static org.tron.core.services.http.Util.setTransactionExtraData;
+import static org.tron.core.services.http.Util.setTransactionPermissionId;
+import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.*;
 
 @Slf4j(topic = "API")
 public class TronJsonRpcImpl implements TronJsonRpc {
@@ -303,8 +282,10 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   @Override
   public String getNetVersion() throws JsonRpcInternalException {
     logger.info("[sniper] getNetVersion ...");
-    return ethChainId();
+    int chainId = Numeric.toBigInt(new byte[]{Wallet.getAddressPreFixByte()}).intValue();
+    return Integer.toString(chainId);
   }
+
 
   @Override
   public String ethChainId() throws JsonRpcInternalException {
@@ -371,10 +352,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
     }
   }
 
-  private void callTriggerConstantContract(byte[] ownerAddressByte, byte[] contractAddressByte,
-      long value, byte[] data, TransactionExtention.Builder trxExtBuilder,
-      Return.Builder retBuilder)
-      throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
+  private void callTriggerConstantContract(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data, TransactionExtention.Builder trxExtBuilder, Return.Builder retBuilder) throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
 
     TriggerSmartContract triggerContract = triggerCallContract(
         ownerAddressByte,
@@ -845,6 +823,10 @@ public class TronJsonRpcImpl implements TronJsonRpc {
       TransactionJson transactionJson = new TransactionJson();
       transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, false)));
 
+      logger.info("Debug build smart contract, builder: {}", build);
+      logger.info("Debug build smart contract, tx: {}", tx);
+      logger.info("Debug build smart contract, raw-data: {}", tx.getRawData());
+
       return transactionJson;
     } catch (JsonRpcInvalidParamsException e) {
       throw new JsonRpcInvalidParamsException(e.getMessage());
@@ -1016,8 +998,46 @@ public class TronJsonRpcImpl implements TronJsonRpc {
   @Override
   public String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException {
     logger.info("[sniper] ethSendRawTransaction => {}", rawData);
-    throw new JsonRpcMethodNotFoundException("the method eth_sendRawTransaction does not exist/is not available");
+    SignedRawTransaction rawTransaction = (SignedRawTransaction) TransactionDecoder.decode(rawData);
+    String ownerAddress = recoverAddress(rawTransaction, Wallet.getAddressPreFixByte());
+
+    BuildArguments args = new BuildArguments();
+    args.setFrom(ownerAddress);
+    args.setGas(Numeric.toHexStringWithPrefix(rawTransaction.getGasLimit()));
+    args.setGasPrice(Numeric.toHexStringWithPrefix(rawTransaction.getGasPrice()));
+    args.setNonce(Numeric.toHexStringWithPrefix(rawTransaction.getNonce()));
+    args.setData(rawTransaction.getData());
+    args.setValue(Numeric.toHexStringWithPrefix(rawTransaction.getValue()));
+    args.setTo(rawTransaction.getTo());
+
+    try {
+      TransactionJson txJson = buildTransaction(args);
+      logger.info("eth_sendRawTransaction txjson: {}", txJson.getTransaction().toJSONString());
+      Transaction tx = Util.packTransaction(txJson.getTransaction().toJSONString(), false);
+      logger.info("eth_sendRawTransaction tx: {}", tx);
+      wallet.broadcastTransaction(tx);
+      logger.info("eth_sendRawTransaction broadcastTransaction done!");
+
+      return "0x" + org.tron.core.utils.TransactionUtil.getTransactionId(tx);
+    } catch (Exception e) {
+      logger.error("eth_sendRawTransaction error: ", e);
+      throw new JsonRpcMethodNotFoundException(e.getMessage());
+    }
   }
+
+  public static String recoverAddress(SignedRawTransaction rawTransaction, long chainId) throws JsonRpcMethodNotFoundException {
+   try{
+     Sign.SignatureData signatureData = rawTransaction.getSignatureData();
+     byte realV = rawTransaction.getRealV(Numeric.toBigInt(signatureData.getV()));
+     signatureData = new Sign.SignatureData(realV, signatureData.getR(), signatureData.getS());
+     BigInteger pubKey = Sign.signedMessageToKey(TransactionEncoder.encode(rawTransaction, chainId), signatureData);
+     return Numeric.prependHexPrefix(Keys.getAddress(pubKey));
+   }catch (SignatureException e){
+     logger.error("Failure to recover address: ", e);
+     throw new JsonRpcMethodNotFoundException("Can not recover from address");
+   }
+  }
+
 
   @Override
   public String ethSendTransaction(CallArguments args) throws JsonRpcMethodNotFoundException {

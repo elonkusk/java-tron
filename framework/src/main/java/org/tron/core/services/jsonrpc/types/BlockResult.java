@@ -20,6 +20,7 @@ import org.tron.protos.Protocol.TransactionInfo;
 @ToString
 @JsonPropertyOrder(alphabetic = true)
 public class BlockResult {
+  public static final long GAS_LIMIT_DEF = 1_000_000_000L;
 
   @Getter
   @Setter
@@ -84,7 +85,7 @@ public class BlockResult {
   private String baseFeePerGas = null;
   @Getter
   @Setter
-  private String mixHash = null;
+  private String mixHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   public BlockResult(Block block, boolean fullTx, Wallet wallet) {
     BlockCapsule blockCapsule = new BlockCapsule(block);
@@ -92,16 +93,16 @@ public class BlockResult {
     number = ByteArray.toJsonHex(blockCapsule.getNum());
     hash = ByteArray.toJsonHex(blockCapsule.getBlockId().getBytes());
     parentHash = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getParentHash().toByteArray());
-    nonce = null; // no value
+    nonce = "0x0000000000000000"; // no value
     sha3Uncles = null; // no value
     logsBloom = ByteArray.toJsonHex(new byte[256]); // no value
     transactionsRoot = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getTxTrieRoot().toByteArray());
     stateRoot = ByteArray.toJsonHex(block.getBlockHeader().getRawData().getAccountStateRoot().toByteArray());
     receiptsRoot = null; // no value
     miner = ByteArray.toJsonHexAddress(blockCapsule.getWitnessAddress().toByteArray());
-    difficulty = null; // no value
-    totalDifficulty = null; // no value
-    extraData = null; // no value
+    difficulty = "0x0"; // no value
+    totalDifficulty = "0x0"; // no value
+    extraData = "0x"; // no value
     size = ByteArray.toJsonHex(block.getSerializedSize());
     timestamp = ByteArray.toJsonHex(blockCapsule.getTimeStamp());
 
@@ -134,8 +135,8 @@ public class BlockResult {
     }
     transactions = txes.toArray();
 
-    gasLimit = ByteArray.toJsonHex(gasLimitInBlock == 0 ? 100 : gasLimitInBlock);
-    gasUsed = ByteArray.toJsonHex(gasUsedInBlock == 0 ? 100 : gasUsedInBlock);
+    gasLimit = ByteArray.toJsonHex(gasLimitInBlock == 0 ? GAS_LIMIT_DEF : gasLimitInBlock);
+    gasUsed = ByteArray.toJsonHex(gasUsedInBlock);
     uncles = new String[0];
   }
 }
