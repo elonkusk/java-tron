@@ -1,37 +1,25 @@
 package org.tron.core.services.jsonrpc;
 
-import com.alibaba.fastjson.JSON;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.GeneratedMessageV3;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tron.api.GrpcAPI.BytesMessage;
 import org.tron.api.GrpcAPI.Return;
-import org.tron.api.GrpcAPI.Return.response_code;
 import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.crypto.Hash;
-import org.tron.common.crypto.SignInterface;
-import org.tron.common.crypto.SignUtils;
-import org.tron.common.logsfilter.capsule.BlockFilterCapsule;
-import org.tron.common.logsfilter.capsule.LogsFilterCapsule;
-import org.tron.common.parameter.CommonParameter;
 import org.tron.common.runtime.vm.DataWord;
 import org.tron.common.utils.ByteArray;
-import org.tron.common.utils.ByteUtil;
 import org.tron.core.Wallet;
 import org.tron.core.capsule.BlockCapsule;
 import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.capsule.utils.TransactionUtil;
-import org.tron.core.config.args.Args;
 import org.tron.core.db.Manager;
-import org.tron.core.db2.core.Chainbase;
 import org.tron.core.exception.*;
 import org.tron.core.services.NodeInfoService;
-import org.tron.core.services.http.JsonFormat;
 import org.tron.core.services.http.Util;
-import org.tron.core.services.jsonrpc.filters.*;
+import org.tron.core.services.jsonrpc.filters.BlockFilterAndResult;
+import org.tron.core.services.jsonrpc.filters.LogFilterAndResult;
+import org.tron.core.services.jsonrpc.filters.LogFilterWrapper;
 import org.tron.core.services.jsonrpc.types.*;
 import org.tron.core.store.StorageRowStore;
 import org.tron.core.vm.program.Storage;
@@ -41,35 +29,22 @@ import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.TransactionInfo;
-import org.tron.protos.contract.AssetIssueContractOuterClass.TransferAssetContract;
-import org.tron.protos.contract.BalanceContract.TransferContract;
-import org.tron.protos.contract.SmartContractOuterClass.CreateSmartContract;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContract;
-import org.tron.protos.contract.SmartContractOuterClass.SmartContract.ABI;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContractDataWrapper;
-import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
-import org.web3j.crypto.*;
+import org.web3j.crypto.SignedRawTransaction;
+import org.web3j.crypto.TransactionDecoder;
+import org.web3j.crypto.TransactionEncoder;
 import org.web3j.utils.Numeric;
 
-import java.math.BigInteger;
-import java.security.SignatureException;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.tron.core.Wallet.CONTRACT_VALIDATE_ERROR;
-import static org.tron.core.Wallet.CONTRACT_VALIDATE_EXCEPTION;
-import static org.tron.core.services.http.Util.setTransactionExtraData;
-import static org.tron.core.services.http.Util.setTransactionPermissionId;
 import static org.tron.core.services.jsonrpc.JsonRpcApiUtil.*;
 
 @Slf4j(topic = "API")
-public class TronJsonRpcImpl implements TronJsonRpc {
+public class TronJsonRpcImpl extends JsonRpcExt implements TronJsonRpc {
 
     public enum RequestSource {
         FULLNODE,
@@ -77,39 +52,13 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         PBFT
     }
 
-    private static final String FILTER_NOT_FOUND = "filter not found";
     public static final int EXPIRE_SECONDS = 5 * 60;
-    /**
-     * for log filter in Full Json-RPC
-     */
-    @Getter
-    private static final Map<String, LogFilterAndResult> eventFilter2ResultFull =
-            new ConcurrentHashMap<>();
-    /**
-     * for block in Full Json-RPC
-     */
-    @Getter
-    private static final Map<String, BlockFilterAndResult> blockFilter2ResultFull =
-            new ConcurrentHashMap<>();
-    /**
-     * for log filter in solidity Json-RPC
-     */
-    @Getter
-    private static final Map<String, LogFilterAndResult> eventFilter2ResultSolidity =
-            new ConcurrentHashMap<>();
-    /**
-     * for block in solidity Json-RPC
-     */
-    @Getter
-    private static final Map<String, BlockFilterAndResult> blockFilter2ResultSolidity = new ConcurrentHashMap<>();
 
-    public static final String HASH_REGEX = "(0x)?[a-zA-Z0-9]{64}$";
 
     public static final String EARLIEST_STR = "earliest";
     public static final String PENDING_STR = "pending";
     public static final String LATEST_STR = "latest";
 
-    private static final String JSON_ERROR = "invalid json request";
     private static final String BLOCK_NUM_ERROR = "invalid block number";
     private static final String TAG_NOT_SUPPORT_ERROR = "TAG [earliest | pending] not supported";
     private static final String QUANTITY_NOT_SUPPORT_ERROR = "QUANTITY not supported, just support TAG as latest";
@@ -117,76 +66,15 @@ public class TronJsonRpcImpl implements TronJsonRpc {
     /**
      * thread pool of query section bloom store
      */
-    private final ExecutorService sectionExecutor;
     private final NodeInfoService nodeInfoService;
     private final Wallet wallet;
     private final Manager manager;
 
     public TronJsonRpcImpl(NodeInfoService nodeInfoService, Wallet wallet, Manager manager) {
+        super(wallet, manager);
         this.nodeInfoService = nodeInfoService;
         this.wallet = wallet;
         this.manager = manager;
-        this.sectionExecutor = Executors.newFixedThreadPool(5);
-    }
-
-    public static void handleBLockFilter(BlockFilterCapsule blockFilterCapsule) {
-        Iterator<Entry<String, BlockFilterAndResult>> it;
-
-        if (blockFilterCapsule.isSolidified()) {
-            it = getBlockFilter2ResultSolidity().entrySet().iterator();
-        } else {
-            it = getBlockFilter2ResultFull().entrySet().iterator();
-        }
-
-        while (it.hasNext()) {
-            Entry<String, BlockFilterAndResult> entry = it.next();
-            if (entry.getValue().isExpire()) {
-                it.remove();
-                continue;
-            }
-            entry.getValue().getResult().add(ByteArray.toJsonHex(blockFilterCapsule.getBlockHash()));
-        }
-    }
-
-    public static void handleLogsFilter(LogsFilterCapsule logsFilterCapsule) {
-        Iterator<Entry<String, LogFilterAndResult>> it;
-
-        if (logsFilterCapsule.isSolidified()) {
-            it = getEventFilter2ResultSolidity().entrySet().iterator();
-        } else {
-            it = getEventFilter2ResultFull().entrySet().iterator();
-        }
-
-        while (it.hasNext()) {
-            Entry<String, LogFilterAndResult> entry = it.next();
-            if (entry.getValue().isExpire()) {
-                it.remove();
-                continue;
-            }
-
-            LogFilterAndResult logFilterAndResult = entry.getValue();
-            long fromBlock = logFilterAndResult.getLogFilterWrapper().getFromBlock();
-            long toBlock = logFilterAndResult.getLogFilterWrapper().getToBlock();
-            if (!(fromBlock <= logsFilterCapsule.getBlockNumber()
-                    && logsFilterCapsule.getBlockNumber() <= toBlock)) {
-                continue;
-            }
-
-            if (logsFilterCapsule.getBloom() != null
-                    && !logFilterAndResult.getLogFilterWrapper().getLogFilter()
-                    .matchBloom(logsFilterCapsule.getBloom())) {
-                continue;
-            }
-
-            LogFilter logFilter = logFilterAndResult.getLogFilterWrapper().getLogFilter();
-            List<LogFilterElement> elements =
-                    LogMatch.matchBlock(logFilter, logsFilterCapsule.getBlockNumber(),
-                            logsFilterCapsule.getBlockHash(), logsFilterCapsule.getTxInfoList(),
-                            logsFilterCapsule.isRemoved());
-            if (CollectionUtils.isNotEmpty(elements)) {
-                logFilterAndResult.getResult().addAll(elements);
-            }
-        }
     }
 
     @Override
@@ -256,35 +144,8 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         return result;
     }
 
-    private byte[] hashToByteArray(String hash) throws JsonRpcInvalidParamsException {
-        if (!Pattern.matches(HASH_REGEX, hash)) {
-            throw new JsonRpcInvalidParamsException("invalid hash value");
-        }
-
-        byte[] bHash;
-        try {
-            bHash = ByteArray.fromHexString(hash);
-        } catch (Exception e) {
-            throw new JsonRpcInvalidParamsException(e.getMessage());
-        }
-        return bHash;
-    }
-
-    private Block getBlockByJsonHash(String blockHash) throws JsonRpcInvalidParamsException {
-        byte[] bHash = hashToByteArray(blockHash);
-        return wallet.getBlockById(ByteString.copyFrom(bHash));
-    }
-
-    private BlockResult getBlockResult(Block block, boolean fullTx) {
-        if (block == null) {
-            return null;
-        }
-
-        return new BlockResult(block, fullTx, wallet);
-    }
-
     @Override
-    public String getNetVersion() throws JsonRpcInternalException {
+    public String getNetVersion() {
         logger.info("[sniper] getNetVersion ...");
         int chainId = Numeric.toBigInt(new byte[]{Wallet.getAddressPreFixByte()}).intValue();
         return Integer.toString(chainId);
@@ -330,96 +191,43 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
     @Override
     public String getTrxBalance(String address, String blockNumOrTag) throws JsonRpcInvalidParamsException {
-        logger.info("[sniper] getTrxBalance...");
-        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
-            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
-        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
-            byte[] addressData = addressCompatibleToByteArray(address);
+        logger.info("[sniper] eth_getBalance ==> {} - {}", address, blockNumOrTag);
+        //@TODO not use blockNumOrTag
+        byte[] addressData = addressCompatibleToByteArray(address);
 
-            Account account = Account.newBuilder().setAddress(ByteString.copyFrom(addressData)).build();
-            Account reply = wallet.getAccount(account);
-            long balance = 0;
+        Account account = Account.newBuilder().setAddress(ByteString.copyFrom(addressData)).build();
+        Account reply = wallet.getAccount(account);
+        long balance = 0;
 
-            if (reply != null) {
-                balance = reply.getBalance();
-            }
-            return ByteArray.toJsonHex(balance);
-        } else {
-            try {
-                ByteArray.hexToBigInteger(blockNumOrTag);
-            } catch (Exception e) {
-                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
-            }
-
-            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+        if (reply != null) {
+            balance = reply.getBalance();
         }
+        return ByteArray.toJsonHex(balance);
+
+//        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag) || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+//            throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
+//        } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
+//            byte[] addressData = addressCompatibleToByteArray(address);
+//
+//            Account account = Account.newBuilder().setAddress(ByteString.copyFrom(addressData)).build();
+//            Account reply = wallet.getAccount(account);
+//            long balance = 0;
+//
+//            if (reply != null) {
+//                balance = reply.getBalance();
+//            }
+//            return ByteArray.toJsonHex(balance);
+//        } else {
+//            try {
+//                ByteArray.hexToBigInteger(blockNumOrTag);
+//            } catch (Exception e) {
+//                throw new JsonRpcInvalidParamsException(BLOCK_NUM_ERROR);
+//            }
+//
+//            throw new JsonRpcInvalidParamsException(QUANTITY_NOT_SUPPORT_ERROR);
+//        }
     }
 
-    private void callTriggerConstantContract(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data, TransactionExtention.Builder trxExtBuilder, Return.Builder retBuilder) throws ContractValidateException, ContractExeException, HeaderNotFound, VMIllegalException {
-
-        TriggerSmartContract triggerContract = triggerCallContract(
-                ownerAddressByte,
-                contractAddressByte,
-                value,
-                data,
-                0,
-                null
-        );
-
-        TransactionCapsule trxCap = wallet.createTransactionCapsule(triggerContract, ContractType.TriggerSmartContract);
-        Transaction trx = wallet.triggerConstantContract(triggerContract, trxCap, trxExtBuilder, retBuilder);
-
-        trxExtBuilder.setTransaction(trx);
-        trxExtBuilder.setTxid(trxCap.getTransactionId().getByteString());
-        trxExtBuilder.setResult(retBuilder);
-        retBuilder.setResult(true).setCode(response_code.SUCCESS);
-    }
-
-    /**
-     * @param data Hash of the method signature and encoded parameters. for example:
-     *             getMethodSign(methodName(uint256,uint256)) || data1 || data2
-     */
-    private String call(byte[] ownerAddressByte, byte[] contractAddressByte, long value, byte[] data) {
-
-        TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
-        Return.Builder retBuilder = Return.newBuilder();
-        TransactionExtention trxExt;
-
-        try {
-            callTriggerConstantContract(ownerAddressByte, contractAddressByte, value, data, trxExtBuilder, retBuilder);
-
-        } catch (ContractValidateException | VMIllegalException e) {
-            retBuilder.setResult(false).setCode(response_code.CONTRACT_VALIDATE_ERROR).setMessage(ByteString.copyFromUtf8(CONTRACT_VALIDATE_ERROR + e.getMessage()));
-            trxExtBuilder.setResult(retBuilder);
-            logger.warn(CONTRACT_VALIDATE_EXCEPTION, e.getMessage());
-        } catch (RuntimeException e) {
-            retBuilder.setResult(false).setCode(response_code.CONTRACT_EXE_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
-            trxExtBuilder.setResult(retBuilder);
-            logger.warn("When run constant call in VM, have RuntimeException: " + e.getMessage());
-        } catch (Exception e) {
-            retBuilder.setResult(false).setCode(response_code.OTHER_ERROR).setMessage(ByteString.copyFromUtf8(e.getClass() + " : " + e.getMessage()));
-            trxExtBuilder.setResult(retBuilder);
-            logger.warn("Unknown exception caught: " + e.getMessage(), e);
-        } finally {
-            trxExt = trxExtBuilder.build();
-        }
-
-        String result = "0x";
-        String code = trxExt.getResult().getCode().toString();
-        if ("SUCCESS".equals(code)) {
-            List<ByteString> list = trxExt.getConstantResultList();
-            byte[] listBytes = new byte[0];
-            for (ByteString bs : list) {
-                listBytes = ByteUtil.merge(listBytes, bs.toByteArray());
-            }
-            result = ByteArray.toJsonHex(listBytes);
-        } else {
-            logger.error("trigger contract failed.");
-        }
-
-        return result;
-    }
 
     @Override
     public String getStorageAt(String address, String storageIdx, String blockNumOrTag) throws JsonRpcInvalidParamsException {
@@ -595,49 +403,6 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         }
     }
 
-    private TransactionResult formatTransactionResult(TransactionInfo transactioninfo, Block block) {
-        String txId = ByteArray.toHexString(transactioninfo.getId().toByteArray());
-
-        Transaction transaction = null;
-        int transactionIndex = -1;
-
-        List<Transaction> txList = block.getTransactionsList();
-        for (int index = 0; index < txList.size(); index++) {
-            transaction = txList.get(index);
-            if (getTxID(transaction).equals(txId)) {
-                transactionIndex = index;
-                break;
-            }
-        }
-
-        if (transactionIndex == -1) {
-            return null;
-        }
-
-        long energyUsageTotal = transactioninfo.getReceipt().getEnergyUsageTotal();
-        BlockCapsule blockCapsule = new BlockCapsule(block);
-        return new TransactionResult(blockCapsule, transactionIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
-    }
-
-    private TransactionResult getTransactionByBlockAndIndex(Block block, String index) throws JsonRpcInvalidParamsException {
-        int txIndex;
-        try {
-            txIndex = ByteArray.jsonHexToInt(index);
-        } catch (Exception e) {
-            throw new JsonRpcInvalidParamsException("invalid index value");
-        }
-
-        if (txIndex >= block.getTransactionsCount()) {
-            return null;
-        }
-
-        Transaction transaction = block.getTransactions(txIndex);
-        long energyUsageTotal = getEnergyUsageTotal(transaction, wallet);
-        BlockCapsule blockCapsule = new BlockCapsule(block);
-
-        return new TransactionResult(blockCapsule, txIndex, transaction, energyUsageTotal, wallet.getEnergyFee(blockCapsule.getTimeStamp()), wallet);
-    }
-
     @Override
     public TransactionResult getTransactionByBlockHashAndIndex(String blockHash, String index)
             throws JsonRpcInvalidParamsException {
@@ -783,176 +548,6 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         return new String[0];
     }
 
-    private TransactionJson buildCreateSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-        try {
-            CreateSmartContract.Builder build = CreateSmartContract.newBuilder();
-
-            build.setOwnerAddress(ByteString.copyFrom(ownerAddress));
-
-            build.setCallTokenValue(args.getTokenValue()).setTokenId(args.getTokenId());
-
-            ABI.Builder abiBuilder = ABI.newBuilder();
-            if (StringUtils.isNotEmpty(args.getAbi())) {
-                String abiStr = "{" + "\"entrys\":" + args.getAbi() + "}";
-                JsonFormat.merge(abiStr, abiBuilder, args.isVisible());
-            }
-
-            SmartContract.Builder smartBuilder = SmartContract.newBuilder();
-            smartBuilder
-                    .setAbi(abiBuilder)
-                    .setCallValue(args.parseValue())
-                    .setConsumeUserResourcePercent(args.getConsumeUserResourcePercent())
-                    .setOriginEnergyLimit(args.getOriginEnergyLimit());
-
-            smartBuilder.setOriginAddress(ByteString.copyFrom(ownerAddress));
-
-            // bytecode + parameter
-            smartBuilder.setBytecode(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
-
-            if (StringUtils.isNotEmpty(args.getName())) {
-                smartBuilder.setName(args.getName());
-            }
-
-            build.setNewContract(smartBuilder);
-
-            Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.CreateSmartContract).getInstance();
-            Transaction.Builder txBuilder = tx.toBuilder();
-            Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
-            rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
-
-            txBuilder.setRawData(rawBuilder);
-            tx = setTransactionPermissionId(args.getPermissionId(), txBuilder.build());
-
-            TransactionJson transactionJson = new TransactionJson();
-            transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, false)));
-
-            return transactionJson;
-        } catch (JsonRpcInvalidParamsException e) {
-            throw new JsonRpcInvalidParamsException(e.getMessage());
-        } catch (ContractValidateException e) {
-            throw new JsonRpcInvalidRequestException(e.getMessage());
-        } catch (Exception e) {
-            throw new JsonRpcInternalException(e.getMessage());
-        }
-    }
-
-    // from and to should not be null
-    private TransactionJson buildTriggerSmartContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-        byte[] contractAddress = addressCompatibleToByteArray(args.getTo());
-
-        TriggerSmartContract.Builder build = TriggerSmartContract.newBuilder();
-        TransactionExtention.Builder trxExtBuilder = TransactionExtention.newBuilder();
-        Return.Builder retBuilder = Return.newBuilder();
-
-        try {
-
-            build.setOwnerAddress(ByteString.copyFrom(ownerAddress)).setContractAddress(ByteString.copyFrom(contractAddress));
-
-            if (StringUtils.isNotEmpty(args.getData())) {
-                build.setData(ByteString.copyFrom(ByteArray.fromHexString(args.getData())));
-            } else {
-                build.setData(ByteString.copyFrom(new byte[0]));
-            }
-
-            build.setCallTokenValue(args.getTokenValue())
-                    .setTokenId(args.getTokenId())
-                    .setCallValue(args.parseValue());
-
-            Transaction tx = wallet.createTransactionCapsule(build.build(), ContractType.TriggerSmartContract).getInstance();
-
-            Transaction.Builder txBuilder = tx.toBuilder();
-            Transaction.raw.Builder rawBuilder = tx.getRawData().toBuilder();
-            rawBuilder.setFeeLimit(args.parseGas() * wallet.getEnergyFee());
-            txBuilder.setRawData(rawBuilder);
-
-            Transaction trx = wallet.triggerContract(build.build(), new TransactionCapsule(txBuilder.build()), trxExtBuilder, retBuilder);
-            trx = setTransactionPermissionId(args.getPermissionId(), trx);
-            trxExtBuilder.setTransaction(trx);
-        } catch (JsonRpcInvalidParamsException e) {
-            throw new JsonRpcInvalidParamsException(e.getMessage());
-        } catch (ContractValidateException e) {
-            throw new JsonRpcInvalidRequestException(e.getMessage());
-        } catch (Exception e) {
-            String errString = JSON_ERROR;
-            if (e.getMessage() != null) {
-                errString = e.getMessage().replaceAll("[\"]", "'");
-            }
-
-            throw new JsonRpcInternalException(errString);
-        }
-
-        String jsonString = Util.printTransaction(trxExtBuilder.build().getTransaction(),
-                args.isVisible());
-        TransactionJson transactionJson = new TransactionJson();
-        transactionJson.setTransaction(JSON.parseObject(jsonString));
-
-        return transactionJson;
-    }
-
-    private TransactionJson createTransactionJson(GeneratedMessageV3.Builder<?> build, ContractType contractTyp, BuildArguments args) throws JsonRpcInvalidRequestException, JsonRpcInternalException {
-        try {
-            Transaction tx = wallet
-                    .createTransactionCapsule(build.build(), contractTyp)
-                    .getInstance();
-            tx = setTransactionPermissionId(args.getPermissionId(), tx);
-            tx = setTransactionExtraData(args.getExtraData(), tx, args.isVisible());
-
-            TransactionJson transactionJson = new TransactionJson();
-            transactionJson.setTransaction(JSON.parseObject(Util.printCreateTransaction(tx, args.isVisible())));
-
-            return transactionJson;
-        } catch (ContractValidateException e) {
-            throw new JsonRpcInvalidRequestException(e.getMessage());
-        } catch (Exception e) {
-            throw new JsonRpcInternalException(e.getMessage());
-        }
-    }
-
-    private TransactionJson buildTransferContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-        long amount = args.parseValue();
-
-        TransferContract.Builder build = TransferContract.newBuilder();
-        build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
-                .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
-                .setAmount(amount);
-
-        return createTransactionJson(build, ContractType.TransferContract, args);
-    }
-
-    // tokenId and tokenValue should not be null
-    private TransactionJson buildTransferAssetContractTransaction(byte[] ownerAddress, BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException {
-        byte[] tokenIdArr = ByteArray.fromString(String.valueOf(args.getTokenId()));
-        if (tokenIdArr == null) {
-            throw new JsonRpcInvalidParamsException("invalid param value: invalid tokenId");
-        }
-
-        TransferAssetContract.Builder build = TransferAssetContract.newBuilder();
-        build.setOwnerAddress(ByteString.copyFrom(ownerAddress))
-                .setToAddress(ByteString.copyFrom(addressCompatibleToByteArray(args.getTo())))
-                .setAssetName(ByteString.copyFrom(tokenIdArr))
-                .setAmount(args.getTokenValue());
-
-        return createTransactionJson(build, ContractType.TransferAssetContract, args);
-    }
-
-    public RequestSource getSource() {
-        Chainbase.Cursor cursor = wallet.getCursor();
-        switch (cursor) {
-            case SOLIDITY:
-                return RequestSource.SOLIDITY;
-            case PBFT:
-                return RequestSource.PBFT;
-            default:
-                return RequestSource.FULLNODE;
-        }
-    }
-
-    public void disableInPBFT(String method) throws JsonRpcMethodNotFoundException {
-        if (getSource() == RequestSource.PBFT) {
-            String msg = String.format("the method %s does not exist/is not available in PBFT", method);
-            throw new JsonRpcMethodNotFoundException(msg);
-        }
-    }
 
     @Override
     public TransactionJson buildTransaction(BuildArguments args) throws JsonRpcInvalidParamsException, JsonRpcInvalidRequestException, JsonRpcInternalException, JsonRpcMethodNotFoundException {
@@ -994,11 +589,14 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         throw new JsonRpcMethodNotFoundException("the method eth_submitWork does not exist/is not available");
     }
 
+
     @Override
     public String ethSendRawTransaction(String rawData) throws JsonRpcMethodNotFoundException {
         logger.info("[sniper] ethSendRawTransaction => {}", rawData);
         try {
             SignedRawTransaction rawTransaction = (SignedRawTransaction) TransactionDecoder.decode(rawData);
+            String ownerAddress = recoverAddress(rawTransaction, Wallet.getAddressPreFixByte());
+            rawTransaction.verify(ownerAddress);
 
             BuildArguments args = new BuildArguments();
             args.setFrom(rawTransaction.getFrom());
@@ -1015,8 +613,11 @@ public class TronJsonRpcImpl implements TronJsonRpc {
 
             TransactionJson txJson = buildTransaction(args);
             Transaction tx = Util.packTransaction(txJson.getTransaction().toJSONString(), false);
-            Objects.requireNonNull(tx, "Tx null");
 
+            logger.info("Data in raw =====> {}", Numeric.toHexString(tx.getRawData().getData().toByteArray()));
+            logger.info("Value Contract =====> {}", Numeric.toHexString(tx.getRawData().getContract(0).getParameter().getValue().toByteArray()));
+
+            Objects.requireNonNull(tx, "Tx null");
             logger.info("eth_sendRawTransaction tx: {}", tx);
             wallet.broadcastTransaction(tx, true);
 
@@ -1137,8 +738,7 @@ public class TronJsonRpcImpl implements TronJsonRpc {
     }
 
     @Override
-    public boolean uninstallFilter(String filterId) throws ItemNotFoundException,
-            JsonRpcMethodNotFoundException {
+    public boolean uninstallFilter(String filterId) throws ItemNotFoundException, JsonRpcMethodNotFoundException {
         disableInPBFT("eth_uninstallFilter");
 
         Map<String, BlockFilterAndResult> blockFilter2Result;
@@ -1218,42 +818,6 @@ public class TronJsonRpcImpl implements TronJsonRpc {
         long currentMaxBlockNum = wallet.getNowBlock().getBlockHeader().getRawData().getNumber();
 
         return getLogsByLogFilterWrapper(logFilterWrapper, currentMaxBlockNum);
-    }
-
-    private LogFilterElement[] getLogsByLogFilterWrapper(LogFilterWrapper logFilterWrapper,
-                                                         long currentMaxBlockNum) throws JsonRpcTooManyResultException, ExecutionException,
-            InterruptedException, BadItemException, ItemNotFoundException {
-        //query possible block
-        LogBlockQuery logBlockQuery = new LogBlockQuery(logFilterWrapper, manager.getChainBaseManager()
-                .getSectionBloomStore(), currentMaxBlockNum, sectionExecutor);
-        List<Long> possibleBlockList = logBlockQuery.getPossibleBlock();
-
-        //match event from block one by one exactly
-        LogMatch logMatch =
-                new LogMatch(logFilterWrapper, possibleBlockList, manager);
-        return logMatch.matchBlockOneByOne();
-    }
-
-    public static Object[] getFilterResult(String filterId, Map<String, BlockFilterAndResult>
-            blockFilter2Result, Map<String, LogFilterAndResult> eventFilter2Result)
-            throws ItemNotFoundException {
-        Object[] result;
-
-        if (blockFilter2Result.containsKey(filterId)) {
-            List<String> blockHashList = blockFilter2Result.get(filterId).popAll();
-            result = blockHashList.toArray(new String[blockHashList.size()]);
-            blockFilter2Result.get(filterId).updateExpireTime();
-
-        } else if (eventFilter2Result.containsKey(filterId)) {
-            List<LogFilterElement> logElementList = eventFilter2Result.get(filterId).popAll();
-            result = logElementList.toArray(new LogFilterElement[0]);
-            eventFilter2Result.get(filterId).updateExpireTime();
-
-        } else {
-            throw new ItemNotFoundException(FILTER_NOT_FOUND);
-        }
-
-        return result;
     }
 
 }

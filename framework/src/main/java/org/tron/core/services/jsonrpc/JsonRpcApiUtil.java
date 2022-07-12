@@ -8,7 +8,10 @@ import com.google.common.base.Throwables;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+
+import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +29,7 @@ import org.tron.common.utils.Sha256Hash;
 import org.tron.common.utils.StringUtil;
 import org.tron.core.Wallet;
 import org.tron.core.exception.JsonRpcInvalidParamsException;
+import org.tron.core.exception.JsonRpcMethodNotFoundException;
 import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
@@ -50,6 +54,11 @@ import org.tron.protos.contract.SmartContractOuterClass.UpdateSettingContract;
 import org.tron.protos.contract.VoteAssetContractOuterClass.VoteAssetContract;
 import org.tron.protos.contract.WitnessContract.VoteWitnessContract;
 import org.tron.protos.contract.WitnessContract.VoteWitnessContract.Vote;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.crypto.SignedRawTransaction;
+import org.web3j.crypto.TransactionEncoder;
+import org.web3j.utils.Numeric;
 
 @Slf4j(topic = "API")
 public class JsonRpcApiUtil {
@@ -499,5 +508,18 @@ public class JsonRpcApiUtil {
     byte[] uid = new byte[16]; // 128 bits are converted to 16 bytes
     random.nextBytes(uid);
     return ByteArray.toHexString(uid);
+  }
+
+  public static String recoverAddress(SignedRawTransaction rawTransaction, long chainId) throws JsonRpcMethodNotFoundException {
+    try{
+      Sign.SignatureData signatureData = rawTransaction.getSignatureData();
+      byte realV = rawTransaction.getRealV(Numeric.toBigInt(signatureData.getV()));
+      signatureData = new Sign.SignatureData(realV, signatureData.getR(), signatureData.getS());
+      BigInteger pubKey = Sign.signedMessageToKey(TransactionEncoder.encode(rawTransaction, chainId), signatureData);
+      return Numeric.prependHexPrefix(Keys.getAddress(pubKey));
+    }catch (SignatureException e){
+      logger.error("Failure to recover address: ", e);
+      throw new JsonRpcMethodNotFoundException("Can not recover from address");
+    }
   }
 }

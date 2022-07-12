@@ -41,8 +41,7 @@ public class RuntimeImpl implements Runtime {
       throws ContractValidateException, ContractExeException {
     this.context = context;
 
-    ContractType contractType = context.getTrxCap().getInstance().getRawData().getContract(0)
-        .getType();
+    ContractType contractType = context.getTrxCap().getInstance().getRawData().getContract(0).getType();
     switch (contractType.getNumber()) {
       case ContractType.TriggerSmartContract_VALUE:
       case ContractType.CreateSmartContract_VALUE:

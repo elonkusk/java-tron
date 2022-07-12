@@ -557,10 +557,8 @@ public class Manager {
         logger.info(SAVE_BLOCK + genesisBlock);
         // init Dynamic Properties Store
         chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderNumber(0);
-        chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderHash(
-            genesisBlock.getBlockId().getByteString());
-        chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderTimestamp(
-            genesisBlock.getTimeStamp());
+        chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderHash(genesisBlock.getBlockId().getByteString());
+        chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderTimestamp(genesisBlock.getTimeStamp());
         this.initAccount();
         this.initWitness();
         this.khaosDb.start(genesisBlock);
@@ -639,16 +637,14 @@ public class Manager {
 
               final AccountCapsule accountCapsule;
               if (!chainBaseManager.getAccountStore().has(keyAddress)) {
-                accountCapsule = new AccountCapsule(ByteString.EMPTY,
-                    address, AccountType.AssetIssue, 0L);
+                accountCapsule = new AccountCapsule(ByteString.EMPTY, address, AccountType.AssetIssue, 0L);
               } else {
                 accountCapsule = chainBaseManager.getAccountStore().getUnchecked(keyAddress);
               }
               accountCapsule.setIsWitness(true);
               chainBaseManager.getAccountStore().put(keyAddress, accountCapsule);
 
-              final WitnessCapsule witnessCapsule =
-                  new WitnessCapsule(address, key.getVoteCount(), key.getUrl());
+              final WitnessCapsule witnessCapsule = new WitnessCapsule(address, key.getVoteCount(), key.getUrl());
               witnessCapsule.setIsJobs(true);
               chainBaseManager.getWitnessStore().put(keyAddress, witnessCapsule);
             });
@@ -667,16 +663,13 @@ public class Manager {
   }
 
   void validateTapos(TransactionCapsule transactionCapsule) throws TaposException {
-    byte[] refBlockHash = transactionCapsule.getInstance()
-        .getRawData().getRefBlockHash().toByteArray();
-    byte[] refBlockNumBytes = transactionCapsule.getInstance()
-        .getRawData().getRefBlockBytes().toByteArray();
+    byte[] refBlockHash = transactionCapsule.getInstance().getRawData().getRefBlockHash().toByteArray();
+    byte[] refBlockNumBytes = transactionCapsule.getInstance().getRawData().getRefBlockBytes().toByteArray();
     try {
       byte[] blockHash = chainBaseManager.getRecentBlockStore().get(refBlockNumBytes).getData();
       if (!Arrays.equals(blockHash, refBlockHash)) {
         String str = String.format(
-            "Tapos failed, different block hash, %s, %s , recent block %s, "
-                + "solid block %s head block %s",
+            "Tapos failed, different block hash, %s, %s , recent block %s, " + "solid block %s head block %s",
             ByteArray.toLong(refBlockNumBytes), Hex.toHexString(refBlockHash),
             Hex.toHexString(blockHash),
             chainBaseManager.getSolidBlockId().getString(),
@@ -685,29 +678,23 @@ public class Manager {
         throw new TaposException(str);
       }
     } catch (ItemNotFoundException e) {
-      String str = String
-          .format("Tapos failed, block not found, ref block %s, %s , solid block %s head block %s",
+      String str = String.format("Tapos failed, block not found, ref block %s, %s , solid block %s head block %s",
               ByteArray.toLong(refBlockNumBytes), Hex.toHexString(refBlockHash),
               chainBaseManager.getSolidBlockId().getString(),
-              chainBaseManager.getHeadBlockId().getString()).toString();
+              chainBaseManager.getHeadBlockId().getString());
       logger.info(str);
       throw new TaposException(str);
     }
   }
 
-  void validateCommon(TransactionCapsule transactionCapsule)
-      throws TransactionExpirationException, TooBigTransactionException {
+  void validateCommon(TransactionCapsule transactionCapsule) throws TransactionExpirationException, TooBigTransactionException {
     if (transactionCapsule.getData().length > Constant.TRANSACTION_MAX_BYTE_SIZE) {
-      throw new TooBigTransactionException(
-          "too big transaction, the size is " + transactionCapsule.getData().length + " bytes");
+      throw new TooBigTransactionException("too big transaction, the size is " + transactionCapsule.getData().length + " bytes");
     }
     long transactionExpiration = transactionCapsule.getExpiration();
     long headBlockTime = chainBaseManager.getHeadBlockTimeStamp();
-    if (transactionExpiration <= headBlockTime
-        || transactionExpiration > headBlockTime + Constant.MAXIMUM_TIME_UNTIL_EXPIRATION) {
-      throw new TransactionExpirationException(
-          "transaction expiration, transaction expiration time is " + transactionExpiration
-              + ", but headBlockTime is " + headBlockTime);
+    if (transactionExpiration <= headBlockTime || transactionExpiration > headBlockTime + Constant.MAXIMUM_TIME_UNTIL_EXPIRATION) {
+      throw new TransactionExpirationException("transaction expiration, transaction expiration time is " + transactionExpiration + ", but headBlockTime is " + headBlockTime);
     }
   }
 
@@ -823,15 +810,13 @@ public class Manager {
   public synchronized void eraseBlock() {
     session.reset();
     try {
-      BlockCapsule oldHeadBlock = chainBaseManager.getBlockById(
-          getDynamicPropertiesStore().getLatestBlockHeaderHash());
+      BlockCapsule oldHeadBlock = chainBaseManager.getBlockById(getDynamicPropertiesStore().getLatestBlockHeaderHash());
       logger.info("start to erase block:" + oldHeadBlock);
       khaosDb.pop();
       revokingStore.fastPop();
       logger.info("end to erase block:" + oldHeadBlock);
       poppedTransactions.addAll(oldHeadBlock.getTransactions());
-      Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, oldHeadBlock.getTransactions().size(),
-          MetricLabels.Gauge.QUEUE_POPPED);
+      Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, oldHeadBlock.getTransactions().size(), MetricLabels.Gauge.QUEUE_POPPED);
 
     } catch (ItemNotFoundException | BadItemException e) {
       logger.warn(e.getMessage(), e);

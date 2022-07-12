@@ -2718,9 +2718,7 @@ public class Wallet {
     byte[] address = bytesMessage.getValue().toByteArray();
     AccountCapsule accountCapsule = chainBaseManager.getAccountStore().get(address);
     if (accountCapsule == null) {
-      logger.error(
-          "Get contract failed, the account does not exist or the account "
-              + "does not have a code hash!");
+      logger.error("Get contract failed, the account does not exist or the account " + "does not have a code hash!");
       return null;
     }
 

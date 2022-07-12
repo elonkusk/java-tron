@@ -55,6 +55,8 @@ import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
 import org.tron.protos.contract.WitnessContract.VoteWitnessContract;
 import org.tron.protos.contract.WitnessContract.WitnessCreateContract;
 import org.tron.protos.contract.WitnessContract.WitnessUpdateContract;
+import org.web3j.crypto.SignedRawTransaction;
+import org.web3j.crypto.TransactionDecoder;
 import org.web3j.utils.Numeric;
 
 import java.io.IOException;
@@ -248,8 +250,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
     Transaction.raw.Builder rawBuilder = tx.toBuilder()
         .getRawDataBuilder()
         .clearContract()
-        .addContract(Transaction.Contract.newBuilder().setType(ContractType.ShieldedTransferContract)
-                .setParameter(Any.pack(newContract.build())).build());
+        .addContract(Transaction.Contract.newBuilder().setType(ContractType.ShieldedTransferContract).setParameter(Any.pack(newContract.build())).build());
 
     Transaction transaction = tx.toBuilder().clearRawData().setRawData(rawBuilder).build();
 
@@ -395,8 +396,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   }
 
   public void setResult(TransactionResultCapsule transactionResultCapsule) {
-    this.transaction = this.getInstance().toBuilder().addRet(transactionResultCapsule.getInstance())
-        .build();
+    this.transaction = this.getInstance().toBuilder().addRet(transactionResultCapsule.getInstance()).build();
   }
 
   public void setReference(long blockNum, byte[] blockHash) {
@@ -416,8 +416,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
    * @param expiration must be in milliseconds format
    */
   public void setExpiration(long expiration) {
-    Transaction.raw rawData = this.transaction.getRawData().toBuilder().setExpiration(expiration)
-        .build();
+    Transaction.raw rawData = this.transaction.getRawData().toBuilder().setExpiration(expiration).build();
     this.transaction = this.transaction.toBuilder().setRawData(rawData).build();
   }
 
@@ -507,7 +506,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
   /**
    * validate signature
    */
-  public boolean validatePubSignature(AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore) throws ValidateSignatureException {
+  private boolean validatePubSignature(AccountStore accountStore, DynamicPropertiesStore dynamicPropertiesStore) throws ValidateSignatureException {
     if (!isVerified) {
       if (this.transaction.getSignatureCount() <= 0 || this.transaction.getRawData().getContractCount() <= 0) {
         throw new ValidateSignatureException("miss sig or contract");
