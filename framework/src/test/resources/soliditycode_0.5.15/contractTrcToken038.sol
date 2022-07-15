@@ -1,6 +1,6 @@
 //pragma solidity ^0.4.24;
 
-contract transferTrc10 {
+contract transferUrc10 {
     function receive(address payable rec) public payable {
         uint256 aamount=address(this).tokenBalance(msg.tokenid);
         uint256 bamount=rec.tokenBalance(msg.tokenid);
@@ -15,7 +15,7 @@ contract transferTrc10 {
     }
 }
 
-contract receiveTrc10 {
+contract receiveUrc10 {
     function() external payable {
     }
     function AssertError() public{

@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package protocol;
 
-option java_package = "org.tron.protos.contract"; //Specify the name of the package that generated the Java file
+option java_package = "org.unx.protos.contract"; //Specify the name of the package that generated the Java file
 //option java_outer_classname = "CreateSmartContract"; //Specify the class name of the generated Java file
-option go_package = "github.com/tronprotocol/grpc-gateway/core";
+option go_package = "github.com/uniworld-io/grpc-gateway/core";
 
-import "core/Tron.proto";
+import "core/Unx.proto";
 
 message SmartContract {
   message ABI {
@@ -54,7 +54,7 @@ message SmartContract {
   string name = 7;
   int64 origin_energy_limit = 8;
   bytes code_hash = 9;
-  bytes trx_hash = 10;
+  bytes unx_hash = 10;
   int32 version = 11;
 }
 

@@ -46,7 +46,7 @@ contract TestGasValue{
         return 123;
     }
     basicContract bc = new basicContract();
-    // external方法在调用时可以采用c.f{gas: 10000, value: 4 trx}()的形式
+    // external方法在调用时可以采用c.f{gas: 10000, value: 4 unw}()的形式
     function callWithGasAndValue(uint x,uint y) external returns(uint) {
         return bc.testNewUse{gas:x, value:y}();
     }
@@ -71,7 +71,7 @@ contract TestGasValue{
 
     // create2的high-level用法new C{salt: 0x1234, value: 1 ether}(arg1, arg2)
     function testCreate2() public returns(address) {
-        basicContract c = new basicContract{salt: bytes32(bytes1(0x01)), value: 1 trx}();
+        basicContract c = new basicContract{salt: bytes32(bytes1(0x01)), value: 1 unw}();
         return address(c);
     }
 

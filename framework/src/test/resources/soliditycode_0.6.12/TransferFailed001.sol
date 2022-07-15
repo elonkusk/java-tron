@@ -36,11 +36,11 @@ contract EnergyOfTransferFailedTest {
     }
 
     // InsufficientBalance
-    function testTransferTrxInsufficientBalance(uint256 i) payable public{
+    function testTransferUnwInsufficientBalance(uint256 i) payable public{
         msg.sender.transfer(i);
     }
 
-    function testSendTrxInsufficientBalance(uint256 i) payable public{
+    function testSendUnwInsufficientBalance(uint256 i) payable public{
         msg.sender.send(i);
     }
 
@@ -48,30 +48,30 @@ contract EnergyOfTransferFailedTest {
         msg.sender.transferToken(i, tokenId);
     }
 
-    function testCallTrxInsufficientBalance(uint256 i,address payable caller) public {
+    function testCallUnwInsufficientBalance(uint256 i,address payable caller) public {
         caller.call.value(i)(abi.encodeWithSignature("test()"));
     }
 
-    function testCreateTrxInsufficientBalance(uint256 i) payable public {
+    function testCreateUnxInsufficientBalance(uint256 i) payable public {
         (new Caller).value(i)();
     }
 
     // NonexistentTarget
 
-    function testSendTrxNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
+    function testSendUnwNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
         nonexistentTarget.send(i);
     }
 
-    function testSendTrxRevert(uint256 i,address payable nonexistentTarget) payable public {
+    function testSendUnwRevert(uint256 i,address payable nonexistentTarget) payable public {
         nonexistentTarget.send(i);
         revert();
     }
 
-    function testTransferTrxNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
+    function testTransferUnwNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
         nonexistentTarget.transfer(i);
     }
 
-    function testTransferTrxrevert(uint256 i,address payable nonexistentTarget) payable public{
+    function testTransferUnwrevert(uint256 i,address payable nonexistentTarget) payable public{
         nonexistentTarget.transfer(i);
         revert();
     }
@@ -85,7 +85,7 @@ contract EnergyOfTransferFailedTest {
         revert();
     }
 
-    function testCallTrxNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
+    function testCallUnwNonexistentTarget(uint256 i,address payable nonexistentTarget) payable public {
         nonexistentTarget.call.value(i)(abi.encodeWithSignature("test()"));
     }
 
@@ -99,12 +99,12 @@ contract EnergyOfTransferFailedTest {
     }
 
     // target is self
-    function testTransferTrxSelf(uint256 i) payable public{
+    function testTransferUnwSelf(uint256 i) payable public{
         address payable self = address(uint160(address(this)));
         self.transfer(i);
     }
 
-    function testSendTrxSelf(uint256 i) payable public{
+    function testSendUnwSelf(uint256 i) payable public{
         address payable self = address(uint160(address(this)));
         self.send(i);
     }

@@ -1,7 +1,7 @@
 //pragma solidity ^0.4.0;
 contract Contract1 {
     constructor() public payable{}
-    function send5SunToReceiver(address payable _receiver) payable public{
+    function send5GinzaToReceiver(address payable _receiver) payable public{
         _receiver.transfer(5);
     }
 }
@@ -13,11 +13,11 @@ contract contract2 {
     }
 
     function triggerContract1(address _receiver) payable public{
-        payContract.call(abi.encodeWithSignature("send5SunToReceiver(address)",_receiver));
+        payContract.call(abi.encodeWithSignature("send5GinzaToReceiver(address)",_receiver));
     }
 
     function triggerContract1ButRevert(address _receiver) payable public{
-        payContract.call(abi.encodeWithSignature("send5SunToReceiver(address)",_receiver));
+        payContract.call(abi.encodeWithSignature("send5GinzaToReceiver(address)",_receiver));
         require(1 == 2);
     }
 

@@ -551,19 +551,19 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 }
 
 
-contract TronCoins is ERC1155 {
-    uint256 public constant TRX = 0;
+contract UnxCoins is ERC1155 {
+    uint256 public constant UNW = 0;
     uint256 public constant BTT = 1;
     uint256 public constant WIN = 2;
-    uint256 public constant SUN = 3;
+    uint256 public constant GINZA = 3;
     uint256 public constant APENFT = 4;
     uint256 public constant APENFT1 = 5;
 
     constructor() public ERC1155("https://game.example/api/item/{id}.json") {
-        _mint(msg.sender, TRX, 10**3, "");
+        _mint(msg.sender, UNW, 10**3, "");
         _mint(msg.sender, BTT, 10**2, "");
         _mint(msg.sender, WIN, 10**5, "");
-        _mint(msg.sender, SUN, 10**4, "");
+        _mint(msg.sender, GINZA, 10**4, "");
         _mint(msg.sender, APENFT, 1, "");
         _mint(msg.sender, APENFT1, 1, "");
     }

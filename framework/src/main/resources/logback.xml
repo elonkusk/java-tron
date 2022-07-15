@@ -3,7 +3,7 @@
 <configuration>
 
   <!-- Be sure to flush latest logs on exit -->
-  <shutdownHook class="org.tron.core.config.TronLogShutdownHook"/>
+  <shutdownHook class="org.unx.core.config.UnxLogShutdownHook"/>
 
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
@@ -16,11 +16,11 @@
 
   <appender class="ch.qos.logback.core.rolling.RollingFileAppender"
     name="FILE">
-    <file>./logs/tron.log</file>
+    <file>./logs/unx.log</file>
     <rollingPolicy
       class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
       <!-- rollover daily -->
-      <fileNamePattern>./logs/tron-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+      <fileNamePattern>./logs/unx-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
       <!-- each file should be at most 500MB, keep 30 days worth of history, but at most 50GB -->
       <maxFileSize>500MB</maxFileSize>
       <maxHistory>7</maxHistory>
@@ -51,7 +51,7 @@
   </root>
 
 
-  <appender name="METRICS" class="org.tron.common.prometheus.InstrumentedAppender" />
+  <appender name="METRICS" class="org.unx.common.prometheus.InstrumentedAppender" />
 
   <root level="INFO">
     <appender-ref ref="METRICS" />

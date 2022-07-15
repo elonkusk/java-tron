@@ -1,12 +1,12 @@
-# Contributing to java-tron
+# Contributing to Unichain-core
 
-java-tron is an open-source project which needs the support of open-source contributors.
+Unichain-core is an open-source project which needs the support of open-source contributors.
 
 Below are the instructions. We understand that there is much left to be desired, and if you see any room for improvement, please let us know. Thank you.
 
 Here are some guidelines to get started quickly and easily:
 - [Reporting An Issue](#Reporting-An-Issue)
-- [Working on java-tron](#Working-on-java-tron)
+- [Working on unichain-core](#Working-on-unichain-core)
   - [Key Branches](#Key-Branches)
   - [Submitting Code](#Submitting-Code)
 - [Code Review Guidelines](#Code-Review-Guidelines)
@@ -22,7 +22,7 @@ Here are some guidelines to get started quickly and easily:
 
 ### Reporting An Issue
 
-If you're about to raise an issue because you think you've found a problem or bug with java-tron, please respect the following restrictions:
+If you're about to raise an issue because you think you've found a problem or bug with unichain-core, please respect the following restrictions:
 
 - Please search for existing issues. Help us keep duplicate issues to a minimum by checking to see if someone has already reported your problem or requested your idea.
 
@@ -36,17 +36,17 @@ If you're about to raise an issue because you think you've found a problem or bu
     ```
 
 
-## Working on java-tron
+## Working on unichain-core
 Thank you for considering to help out with the source code! We welcome contributions from anyone on the internet, and are grateful for even the smallest of fixes!
 
-If you’d like to contribute to java-tron, for small fixes, we recommend that you send a pull request (PR) for the maintainers to review and merge into the main code base, make sure the PR contains a detailed description. For more complex changes, you need to submit an issue to the TIP repository to detail your motive and implementation plan, etc. For how to submit a TIP issue, please refer to [TIP Specification](https://github.com/tronprotocol/tips#to-submit-a-tip).
+If you’d like to contribute to unichain-core, for small fixes, we recommend that you send a pull request (PR) for the maintainers to review and merge into the main code base, make sure the PR contains a detailed description. For more complex changes, you need to submit an issue to the TIP repository to detail your motive and implementation plan, etc. For how to submit a TIP issue, please refer to [TIP Specification](https://github.com/uniworld-io/tips#to-submit-a-tip).
 
 
 As the author of TIP issue, you are expected to encourage developers to discuss this issue, flesh out your issue by collecting their feedback, and eventually put your issue into practice.
 
 
 ### Key Branches
-java-tron only has `master`, `develop`, `release-*`, `feature-*`, and `hotfix-*` branches, which are described below:
+unichain-core only has `master`, `develop`, `release-*`, `feature-*`, and `hotfix-*` branches, which are described below:
 
 - ``develop`` branch  
   The `develop` branch only accept merge request from other forked branches or`release_*` branches. It is not allowed to directly push changes to the `develop` branch. A `release_*` branch has to be pulled from the develop branch when a new build is to be released.
@@ -66,16 +66,16 @@ java-tron only has `master`, `develop`, `release-*`, `feature-*`, and `hotfix-*`
 
 ### Submitting Code
 
-If you want to contribute codes to java-tron, please follow the following steps:
+If you want to contribute codes to unichain-core, please follow the following steps:
 
 * Fork code repository
-  Fork a new repository from tronprotocol/java-tron to your personal code repository
+  Fork a new repository from uniworld-io/unichain-core to your personal code repository
 
 * Edit the code in the fork repository
     ```
-    git clone https://github.com/yourname/java-tron.git
+    git clone https://github.com/yourname/unichain-core.git
 
-    git remote add upstream https://github.com/tronprotocol/java-tron.git     ("upstream" refers to upstream projects repositories, namely tronprotocol's repositories, and can be named as you like it. We usually call it "upstream" for convenience) 
+    git remote add upstream https://github.com/uniworld-io/unichain-core.git     ("upstream" refers to upstream projects repositories, namely uniworld-io's repositories, and can be named as you like it. We usually call it "upstream" for convenience) 
     ```
   Before developing new features, please synchronize your fork repository with the upstream repository.
     ```
@@ -101,18 +101,18 @@ If you want to contribute codes to java-tron, please follow the following steps:
 
 * Push code
 
-  Submit a pull request (PR) from your repository to `tronprotocol/java-tron`.
-  Please be sure to click on the link in the red box shown below. Select the base branch for tronprotocol and the compare branch for your personal fork repository.
+  Submit a pull request (PR) from your repository to `uniworld-io/unichain-core`.
+  Please be sure to click on the link in the red box shown below. Select the base branch for uniworld-io and the compare branch for your personal fork repository.
   ![](https://codimd.s3.shivering-isles.com/demo/uploads/e24435ab42e4287d9369a2136.png)
 
 
 
 ## Code Review Guidelines
-The only way to get code into java-tron is to send a pull request. Those pull requests need to be reviewed by someone. there a guide that explains our expectations around PRs for both authors and reviewers.
+The only way to get code into unichain-core is to send a pull request. Those pull requests need to be reviewed by someone. there a guide that explains our expectations around PRs for both authors and reviewers.
 
 ### Terminology
 - The author of a pull request is the entity who wrote the diff and submitted it to GitHub.
-- The team consists of people with commit rights on the java-tron repository.
+- The team consists of people with commit rights on the unichain-core repository.
 - The reviewer is the person assigned to review the diff. The reviewer must be a team member.
 - The code owner is the person responsible for the subsystem being modified by the PR.
 
@@ -131,7 +131,7 @@ We would like all developers to follow a standard development flow and coding st
 2. Review the code before submission.
 3. Run standardized tests.
 
-`Sonar`-scanner and `Travis CI` continuous integration scanner will be automatically triggered when a pull request has been submitted. When a PR passes all the checks, the **java-tron** maintainers will then review the PR and offer feedback and modifications when necessary.  Once adopted, the PR will be closed and merged into the `develop` branch.
+`Sonar`-scanner and `Travis CI` continuous integration scanner will be automatically triggered when a pull request has been submitted. When a PR passes all the checks, the **unichain-core** maintainers will then review the PR and offer feedback and modifications when necessary.  Once adopted, the PR will be closed and merged into the `develop` branch.
 
 We are glad to receive your pull requests and will try our best to review them as soon as we can. Any pull request is welcome, even if it is for a typo.
 

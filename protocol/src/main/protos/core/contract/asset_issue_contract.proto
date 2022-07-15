@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package protocol;
 
-option java_package = "org.tron.protos.contract"; //Specify the name of the package that generated the Java file
+option java_package = "org.unx.protos.contract"; //Specify the name of the package that generated the Java file
 //option java_outer_classname = "AssetIssueContract"; //Specify the class name of the generated Java file
-option go_package = "github.com/tronprotocol/grpc-gateway/core";
+option go_package = "github.com/uniworld-io/grpc-gateway/core";
 
 message AssetIssueContract {
   string id = 41;
@@ -18,7 +18,7 @@ message AssetIssueContract {
   bytes abbr = 3;
   int64 total_supply = 4;
   repeated FrozenSupply frozen_supply = 5;
-  int32 trx_num = 6;
+  int32 unx_num = 6;
   int32 precision = 7;
   int32 num = 8;
   int64 start_time = 9;

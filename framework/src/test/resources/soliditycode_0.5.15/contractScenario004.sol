@@ -1,9 +1,9 @@
 //pragma solidity ^0.4.11;
 
-contract TronToken {
+contract UnxToken {
 
-    string public name = "Tronix";      //  token name
-    string public symbol = "TRX";           //  token symbol
+    string public name = "Unxx";      //  token name
+    string public symbol = "UNW";           //  token symbol
     uint256 public decimals = 6;            //  token digit
 
     mapping (address => uint256) public balanceOf;

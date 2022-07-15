@@ -2,7 +2,7 @@ pragma solidity ^0.6.0;
 
 contract transferTokenTestA {
 
-    // transfer trc10 to a new address or exist address in constructor
+    // transfer urc10 to a new address or exist address in constructor
     constructor(address payable toAddress, uint256 tokenValue, trcToken id) payable public{
         toAddress.transferToken(tokenValue, id);
         require(toAddress.tokenBalance(id) > 0, "tokenBalance should not be 0");

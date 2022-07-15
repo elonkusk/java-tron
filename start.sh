@@ -1,20 +1,6 @@
 #!/bin/bash
 #############################################################################
-#
-#                    GNU LESSER GENERAL PUBLIC LICENSE
-#                        Version 3, 29 June 2007
-#
-#  Copyright (C) [2007] [TRON Foundation], Inc. <https://fsf.org/>
-#  Everyone is permitted to copy and distribute verbatim copies
-#  of this license document, but changing it is not allowed.
-#
-#
-#   This version of the GNU Lesser General Public License incorporates
-# the terms and conditions of version 3 of the GNU General Public
-# License, supplemented by the additional permissions listed below.
-#
-# You can find java-tron at https://github.com/tronprotocol/java-tron/
-#
+# @todo state licence
 ##############################################################################
 
 # Build FullNode config
@@ -32,8 +18,8 @@ FULL_START_OPT=''
 GITHUB_BRANCH='master'
 GITHUB_CLONE_TYPE='HTTPS'
 GITHUB_REPOSITORY=''
-GITHUB_REPOSITORY_HTTPS_URL='https://github.com/tronprotocol/java-tron.git'
-GITHUB_REPOSITORY_SSH_URL='git@github.com:tronprotocol/java-tron.git'
+GITHUB_REPOSITORY_HTTPS_URL='https://github.com/uniworld-io/unichain-core.git'
+GITHUB_REPOSITORY_SSH_URL='git@github.com:uniworld-io/unichain-core.git'
 
 # Shell option
 ALL_OPT_LENGTH=$#
@@ -53,13 +39,13 @@ UPGRADE=false
 
 # Rebuild manifest
 REBUILD_MANIFEST=true
-REBUILD_DIR="$PWD/output-directory/database"
+REBUILD_DIR="$PWD/ledger/database"
 REBUILD_MANIFEST_SIZE=0
 REBUILD_BATCH_SIZE=80000
 
 # Download and upgrade
 DOWNLOAD=false
-RELEASE_URL='https://github.com/tronprotocol/java-tron/releases'
+RELEASE_URL='https://github.com/uniworld-io/unichain-core/releases/'
 QUICK_START=false
 CLONE_BUILD=false
 
@@ -182,7 +168,7 @@ quickStart() {
     mkdirFullNode
     echo "info: check latest version: $full_node_version"
     echo 'info: download config'
-    download https://raw.githubusercontent.com/tronprotocol/tron-deployment/$GITHUB_BRANCH/$FULL_NODE_CONFIG_MAIN_NET $FULL_NODE_CONFIG_MAIN_NET
+    download https://raw.githubusercontent.com/uniworld-io/unichain-deployment/$GITHUB_BRANCH/$FULL_NODE_CONFIG_MAIN_NET $FULL_NODE_CONFIG_MAIN_NET
     mv $FULL_NODE_CONFIG_MAIN_NET 'config.conf'
 
     echo "info: download $full_node_version"
@@ -198,7 +184,7 @@ cloneCode() {
   if type git >/dev/null 2>&1; then
     git_clone=$(git clone -b $GITHUB_BRANCH $GITHUB_REPOSITORY)
     if [[ git_clone == 0 ]]; then
-      echo 'info: git clone java-tron success'
+      echo 'info: git clone unichain-core success'
     fi
   else
     echo 'info: no exists git, make sure the system can use the "git" command'
@@ -207,17 +193,17 @@ cloneCode() {
 
 cloneBuild() {
   local currentPwd=$PWD
-  echo 'info: clone java-tron'
+  echo 'info: clone unichain-core'
   cloneCode
 
-  echo 'info: build java-tron'
-  cd java-tron
+  echo 'info: build unichain-core'
+  cd unichain-core
   sh gradlew clean build -x test
   if [[ $? == 0 ]];then
     cd $currentPwd
     mkdirFullNode
-    cp '../java-tron/build/libs/FullNode.jar' $PWD
-    cp '../java-tron/framework/src/main/resources/config.conf' $PWD
+    cp '../unichain-core/build/libs/FullNode.jar' $PWD
+    cp '../unichain-core/framework/src/main/resources/config.conf' $PWD
   else
     exit
   fi
@@ -239,7 +225,7 @@ stopService() {
       kill -15 $pid
       sleep 1
     else
-      echo "info: java-tron stop"
+      echo "info: unichain-core stop"
       return
     fi
     count=$(($count + 1))
@@ -335,7 +321,7 @@ startService() {
     -XX:NewRatio=2 -jar \
     $JAR_NAME $FULL_START_OPT >>start.log 2>&1 &
   checkPid
-  echo "info: start java-tron with pid $pid on $HOSTNAME"
+  echo "info: start unichain-core with pid $pid on $HOSTNAME"
   echo "info: if you need to stop the service, execute: sh start.sh --stop"
 }
 
@@ -392,7 +378,7 @@ specifyConfig(){
   fi
 
   if [[ ! -f $FULL_NODE_CONFIG_DIR/$configName ]]; then
-    download https://raw.githubusercontent.com/tronprotocol/tron-deployment/$GITHUB_BRANCH/$configName $configName
+    download https://raw.githubusercontent.com/uniworld-io/unichain-deployment/$GITHUB_BRANCH/$configName $configName
     mv  $configName $FULL_NODE_CONFIG_DIR/$configName
     DEFAULT_FULL_NODE_CONFIG=$FULL_NODE_CONFIG_DIR/$configName
   fi
@@ -419,7 +405,7 @@ checkSign() {
     echo 'info: sha256 signatures pass'
   else
     echo 'info: sha256 signature exception!!!'
-    echo 'info: please compile from the code or download the latest version from https://github.com/tronprotocol/java-tron'
+    echo 'info: please compile from the code or download the latest version from https://github.com/uniworld-io/unichain-core'
   fi
 }
 

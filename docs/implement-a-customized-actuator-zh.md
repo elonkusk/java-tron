@@ -1,6 +1,6 @@
 # 自定义 SumActuator
 
-基于java-tron搭建一条自定义公链时，实现一个定制的actuator是不可缺少的一环，本文演示如何基于 java-tron 开发一个 `SumActuator`。
+基于unichain-core搭建一条自定义公链时，实现一个定制的actuator是不可缺少的一环，本文演示如何基于 unichain-core 开发一个 `SumActuator`。
 
 Actuator 模块抽象出4个方法并定义在 `Actuator` 接口中：
 
@@ -13,15 +13,15 @@ Actuator 模块抽象出4个方法并定义在 `Actuator` 接口中：
 
 ## 定义并注册合约
 
-目前 java-tron 支持的合约定义在 Protocol 模块的 src/main/protos/core/contract 目录中，在这个目录下新建一个 math_contract.proto 文件并声明 `SumContract`。基于篇幅有限本文只提供 sum 的实现，用户也可以自行实现 minus 等功能。
+目前 unichain-core 支持的合约定义在 Protocol 模块的 src/main/protos/core/contract 目录中，在这个目录下新建一个 math_contract.proto 文件并声明 `SumContract`。基于篇幅有限本文只提供 sum 的实现，用户也可以自行实现 minus 等功能。
 
 `SumContract` 的逻辑是将两个数值相加求和：
 
 ```protobuf
 syntax = "proto3";
 package protocol;
-option java_package = "org.tron.protos.contract"; //Specify the name of the package that generated the Java file
-option go_package = "github.com/tronprotocol/grpc-gateway/core";
+option java_package = "org.unx.protos.contract"; //Specify the name of the package that generated the Java file
+option go_package = "github.com/uniworld-io/grpc-gateway/core";
 message SumContract {
     int64 param1 = 1;
     int64 param2 = 2;
@@ -29,7 +29,7 @@ message SumContract {
 }
 ```
 
-同时将新的合约类型注册在 src/main/protos/core/Tron.proto 文件的 `Transaction.Contract.ContractType` 枚举中，交易、账号、区块等重要的数据结构都定义在 Tron.proto 文件中：
+同时将新的合约类型注册在 src/main/protos/core/Unx.proto 文件的 `Transaction.Contract.ContractType` 枚举中，交易、账号、区块等重要的数据结构都定义在 Unx.proto 文件中：
 
 ```protobuf
 message Transaction {
@@ -60,16 +60,16 @@ service Wallet {
   ...
 };
 ```
-最后重新编译修改过 proto 文件，可自行编译也可直接通过编译 java-tron 项目来编译 proto 文件：
+最后重新编译修改过 proto 文件，可自行编译也可直接通过编译 unichain-core 项目来编译 proto 文件：
 
-*目前 java-tron 采用的是 protoc v3.4.0，自行编译时确保 protoc 版本一致。*
+*目前 unichain-core 采用的是 protoc v3.4.0，自行编译时确保 protoc 版本一致。*
 
 ```shell
 # recommended
 ./gradlew build -x test
 
 # or build via protoc
-protoc -I=src/main/protos -I=src/main/protos/core --java_out=src/main/java  Tron.proto
+protoc -I=src/main/protos -I=src/main/protos/core --java_out=src/main/java  Unx.proto
 protoc -I=src/main/protos/core/contract --java_out=src/main/java  math_contract.proto
 protoc -I=src/main/protos/api -I=src/main/protos/core -I=src/main/protos  --java_out=src/main/java api.proto
 ```
@@ -78,7 +78,7 @@ protoc -I=src/main/protos/api -I=src/main/protos/core -I=src/main/protos  --java
 
 ## 实现 SumActuator
 
-目前 java-tron 默认支持的 Actuator 存放在该模块的 org.tron.core.actuator 目录下，同样在该目录下创建 `SumActuator` ：
+目前 unichain-core 默认支持的 Actuator 存放在该模块的 org.unx.core.actuator 目录下，同样在该目录下创建 `SumActuator` ：
 
 ```java
 public class SumActuator extends AbstractActuator {
@@ -215,7 +215,7 @@ public class SumActuatorTest {
   private String serviceNode = "127.0.0.1:50051";
   private String confFile = "config-localtest.conf";
   private String dbPath = "output-directory";
-  private TronApplicationContext context;
+  private UnxApplicationContext context;
   private Application appTest;
   private ManagedChannel channelFull = null;
   private WalletGrpc.WalletBlockingStub blockingStubFull = null;
@@ -228,7 +228,7 @@ public class SumActuatorTest {
     CommonParameter argsTest = Args.getInstance();
     Args.setParam(new String[]{"--output-directory", dbPath},
             confFile);
-    context = new TronApplicationContext(DefaultConfig.class);
+    context = new UnxApplicationContext(DefaultConfig.class);
     RpcApiService rpcApiService = context.getBean(RpcApiService.class);
     appTest = ApplicationFactory.create(context);
     appTest.addService(rpcApiService);
@@ -258,7 +258,7 @@ public class SumActuatorTest {
 
   @Test
   public void sumActuatorTest() {
-    // this key is defined in config-localtest.conf as accountName=Sun
+    // this key is defined in config-localtest.conf as accountName=Ginza
     String key = "cba92a516ea09f620a16ff7ee95ce0df1d56550a8babe9964981a7144c8a784a";
     byte[] address = PublicMethed.getFinalAddress(key);
     ECKey ecKey = null;
@@ -278,7 +278,7 @@ public class SumActuatorTest {
 
     // send contract and return transaction
     Protocol.Transaction transaction = blockingStubFull.invokeSum(contract);
-    // sign trx
+    // sign unx
     transaction = signTransaction(ecKey, transaction);
     // broadcast transaction
     GrpcAPI.Return response = blockingStubFull.broadcastTransaction(transaction);
@@ -306,7 +306,7 @@ INFO [API] RpcApiService has started, listening on 50051
 INFO [net] Node config, trust 0, active 0, forward 0.
 INFO [discover] Discovery server started, bind port 6666
 INFO [net] Fast forward config, isWitness: false, keySize: 1, fastForwardNodes: 0
-INFO [net] TronNetService start successfully.
+INFO [net] UnxNetService start successfully.
 INFO [net] TCP listener started, bind port 6666
 INFO [Configuration] user defined config file doesn't exists, use default config file in jar
 INFO [actuator] 

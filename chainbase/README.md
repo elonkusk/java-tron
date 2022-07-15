@@ -1,4 +1,4 @@
-[![](https://jitpack.io/v/tronprotocol/chainbase.svg)](https://jitpack.io/#tronprotocol/chainbase)
+[![](https://jitpack.io/v/uniworld-io/chainbase.svg)](https://jitpack.io/#uniworld-io/chainbase)
 
 # chainbase
 A decentralized database for blockchain.
@@ -21,7 +21,7 @@ allprojects {
 Step 2. Add the dependency. 
 ```
 dependencies {
-    implementation 'com.github.tronprotocol:chainbase:${version}'
+    implementation 'com.github.uniworld-io:chainbase:${version}'
 }
 ```
 
@@ -41,7 +41,7 @@ Step 1. Add the JitPack repository to your build file.
 Step 2. Add the dependency.
 ```
 <dependency>
-    <groupId>com.github.tronprotocol</groupId>
+    <groupId>com.github.uniworld-io</groupId>
 	  <artifactId>chainbase</artifactId>
 	  <version>${version}</version>
 </dependency>

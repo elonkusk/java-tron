@@ -2,11 +2,11 @@
 
 # Introduction
 
-Using the `start.sh` script, you can quickly and easily run and build java-tron.
+Using the `start.sh` script, you can quickly and easily run and build unichain-core.
 
-If you already downloaded the `FullNode.jar`, you can use `start.sh` to run it, or if you have not downloaded java-tron source code or jar packages, you can use `start.sh` to download the source code, compile, run or get the latest release version in the form of a `jar package ` and run.
+If you already downloaded the `FullNode.jar`, you can use `start.sh` to run it, or if you have not downloaded unichain-core source code or jar packages, you can use `start.sh` to download the source code, compile, run or get the latest release version in the form of a `jar package ` and run.
 
-The script is available in the java-tron project at [github](https://github.com/tronprotocol/java-tron), or if you need a separate script: [start.sh](https://github.com/tronprotocol/java-tron/blob/develop/start.sh)
+The script is available in the unichain-core project at [github](https://github.com/uniworld-io/unichain-core), or if you need a separate script: [start.sh](https://github.com/uniworld-io/unichain-core/blob/develop/start.sh)
 
 ***
 
@@ -38,7 +38,7 @@ The script is available in the java-tron project at [github](https://github.com/
   sh start.sh --release --run
   ```
   
-* Clone the source code, compile `java-tron`, and generate `FullNode.jar` and start it
+* Clone the source code, compile `unichain-core`, and generate `FullNode.jar` and start it
 
   ```
   sh start.sh -cb --run
@@ -174,7 +174,7 @@ Following file structure will be generated after executed the above command and 
 
 **Clone the source code and build**
 
-Get the latest code from master branch of https://github.com/tronprotocol/java-tron and compile. 
+Get the latest code from master branch of https://github.com/uniworld-io/unichain-core and compile. 
 
 After using this command, the "FullNode" directory will be created, the compiled file `FullNode.jar` and the configuration file will be copied to this directory
 
@@ -188,7 +188,7 @@ Following file structure will be created：
 
 ```
 ├── ...
-├── java-tron
+├── unichain-core
     ├── actuator/
     ├── chainbase/
     ├── common/
@@ -210,7 +210,7 @@ Following file structure will be created：
 ```
 
 ```
-├── java-tron/
+├── unichain-core/
 ├── FullNode/
     |── config.conf
     ├── FullNode.jar
@@ -233,4 +233,4 @@ sh start.sh --run -d /tmp/db/database -m 128 -b 64000
 sh start.sh --release --run -d /tmp/db/database -m 128 -b 64000
 ```
 
-For more design details, please refer to: [TIP298](https://github.com/tronprotocol/tips/issues/298) | [Leveldb Startup Optimization Plugins](https://github.com/tronprotocol/documentation-en/blob/master/docs/developers/archive-manifest.md)
+For more design details, please refer to: [TIP298](https://github.com/uniworld-io/tips/issues/298) | [Leveldb Startup Optimization Plugins](https://github.com/uniworld-io/documentation-en/blob/master/docs/developers/archive-manifest.md)

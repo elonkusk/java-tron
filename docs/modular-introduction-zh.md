@@ -2,29 +2,29 @@
 
 ## 模块化的初衷
 
-基于以太坊上的CryptoKitties游戏高峰时期甚至占据了以太坊16%的流量，造成严重的网络拥堵；即便波场的性能约是以太坊的100倍，但依然存在极限，为了更好的进行水平扩展需要对 java-tron 进行模块化拆分，模块化后的 java-tron 可以让应用开发者能够轻易的研发并部署一条区块链，而不仅仅是研发部署一个链上的应用（One Dapp is One Chain)，这将会降低区块链基础设施开发的成本，而且模块化可以帮助开发者更有效的定制符合自身业务的模块，比如抽象后的共识模块可以帮助业务针对具体的场景来选择合适的共识机制。模块后的 java-tron 将区块链本身的底层实现细节对开发者屏蔽，让应用开发者更加专注于业务场景。
+基于以太坊上的CryptoKitties游戏高峰时期甚至占据了以太坊16%的流量，造成严重的网络拥堵；即便波场的性能约是以太坊的100倍，但依然存在极限，为了更好的进行水平扩展需要对 unichain-core 进行模块化拆分，模块化后的 unichain-core 可以让应用开发者能够轻易的研发并部署一条区块链，而不仅仅是研发部署一个链上的应用（One Dapp is One Chain)，这将会降低区块链基础设施开发的成本，而且模块化可以帮助开发者更有效的定制符合自身业务的模块，比如抽象后的共识模块可以帮助业务针对具体的场景来选择合适的共识机制。模块后的 unichain-core 将区块链本身的底层实现细节对开发者屏蔽，让应用开发者更加专注于业务场景。
 
-java-tron 模块化的目的是为了帮助开发者方便地构建出特定应用的区块链，一个应用即是一条链。有以下几点优势：
+unichain-core 模块化的目的是为了帮助开发者方便地构建出特定应用的区块链，一个应用即是一条链。有以下几点优势：
 
 1. 代码层面上的模块化将使系统架构更清晰，代码更加易于维护扩展
 2. 各个模块皆是独立组件，模块化后有利于组件产品化和提高产品成熟度
 3. 面向接口的开发模式使模块更加解耦，实现模块可插拔，满足不同业务需求
 
-## 模块化的 java-tron 架构介绍
+## 模块化的 unichain-core 架构介绍
 
-![modular-structure](https://github.com/tronprotocol/java-tron/blob/develop/docs/images/module.png)
+![modular-structure](https://github.com/uniworld-io/unichain-core/blob/develop/docs/images/module.png)
 
-模块化后的 java-tron 目前分为6个模块：framework、protocol、common、chainbase、consensus、actuator，下面分别简单介绍一下各个模块的作用。
+模块化后的 unichain-core 目前分为6个模块：framework、protocol、common、chainbase、consensus、actuator，下面分别简单介绍一下各个模块的作用。
 
 ### framework
 
-framework 是 java-tron 的核心模块，不仅是整个链的入口模块，同时也充当粘合剂的作用将其他模块有机地组织起来，framework 模块负责各个模块的初始化、流程的跳转。
+framework 是 unichain-core 的核心模块，不仅是整个链的入口模块，同时也充当粘合剂的作用将其他模块有机地组织起来，framework 模块负责各个模块的初始化、流程的跳转。
 
 ### protocol
 
-对于区块链这种分布式网络，简洁高效的数据交换协议尤为重要，protocol 模块定义了外界与 java-tron 交互的二进制协议格式，是 java-tron 实现跨语言跨平台的基础，该模块同时定义了：
-1. java-tron 内部节点间的通信协议
-2. java-tron 对外提供的服务协议
+对于区块链这种分布式网络，简洁高效的数据交换协议尤为重要，protocol 模块定义了外界与 unichain-core 交互的二进制协议格式，是 unichain-core 实现跨语言跨平台的基础，该模块同时定义了：
+1. unichain-core 内部节点间的通信协议
+2. unichain-core 对外提供的服务协议
 
 ### common
 
@@ -37,7 +37,7 @@ chainbase 模块是数据库层面的抽象，像 PoW、PoS、DPoS 这类基于�
 
 下面简单的为大家介绍一下 chainbase 模块中重要的几个实现类和接口：
 1. RevokingDatabase: 是数据库容器的接口，用于所有可回退数据库的管理，SnapshotManager 是该接口的一个实现
-2. TronStoreWithRevoking: 支持可回退的数据库的基类，Chainbase 类是它的具体实现
+2. UnxStoreWithRevoking: 支持可回退的数据库的基类，Chainbase 类是它的具体实现
 
 ### consensus
 
@@ -55,7 +55,7 @@ consensus 模块将共识过程抽象成几个重要的部分，定义在 Consen
 
 ### actuator
 
-以太坊初创性的引入了虚拟机并定义了智能合约这种开发方式，但对于一些复杂的应用，智能合约不够灵活且受限于性能，这也是 java-tron 提供创建应用链的一个原因。为此 java-tron 独立出来了 actuator 模块，该模块为应用开发者提供一种新的开发范式：可以将应用代码直接植入链中而不再将应用代码跑在虚拟机中。
+以太坊初创性的引入了虚拟机并定义了智能合约这种开发方式，但对于一些复杂的应用，智能合约不够灵活且受限于性能，这也是 unichain-core 提供创建应用链的一个原因。为此 unichain-core 独立出来了 actuator 模块，该模块为应用开发者提供一种新的开发范式：可以将应用代码直接植入链中而不再将应用代码跑在虚拟机中。
 actuator 是交易的执行器，可以将应用看成是不同交易类型组成的交易集，每类交易都由对应的 actuator 负责执行。
 
 actuator模块定义了 Actuator 接口，该接口有4个方法：

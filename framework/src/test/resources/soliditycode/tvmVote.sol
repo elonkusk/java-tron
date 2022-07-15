@@ -24,7 +24,7 @@ contract TestVote {
 
   /**
        * @dev Vote witness in `srList` array and every witness will get correspond
-       * tron power in `tpList` array.
+       * unw power in `tpList` array.
        */
       function voteWitness(address[] calldata srList, uint[] calldata tpList) external {
           vote(srList, tpList);

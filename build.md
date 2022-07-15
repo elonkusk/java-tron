@@ -3,13 +3,13 @@
 ## Prepare dependencies
 
 * JDK 1.8 (JDK 1.9+ are not supported yet)
-* On Linux Ubuntu system (e.g. Ubuntu 16.04.4 LTS), ensure that the machine has [__Oracle JDK 8__](https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04), instead of having __Open JDK 8__ in the system. If you are building the source code by using __Open JDK 8__, you will get [__Build Failed__](https://github.com/tronprotocol/java-tron/issues/337) result.
+* On Linux Ubuntu system (e.g. Ubuntu 16.04.4 LTS), ensure that the machine has [__Oracle JDK 8__](https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04), instead of having __Open JDK 8__ in the system. If you are building the source code by using __Open JDK 8__, you will get [__Build Failed__](https://github.com/uniworld-io/unichain-core/issues/337) result.
 * Open **UDP** ports for connection to the network
 * **Minimum** 2 CPU Cores
 
 ## Build and Deploy automatically using scripts
 
-- Please take a look at the [Tron Deployment Scripts](https://github.com/tronprotocol/TronDeployment) repository.
+- Please take a look at the [Unx Deployment Scripts](https://github.com/uniworld-io/UnxDeployment) repository.
 
 ## Getting the code with git
 
@@ -18,15 +18,15 @@
 * `master` branch: more stable than develop.
 In the shell command, type:
   ```bash
-  git clone https://github.com/tronprotocol/java-tron.git
+  git clone https://github.com/uniworld-io/unichain-core.git
   git checkout -t origin/master
   ```
 
 * For Mac, you can also install **[GitHub for Mac](https://mac.github.com/)** then **[fork and clone our repository](https://guides.github.com/activities/forking/)**. 
 
-* If you'd rather not use Git, **[Download the ZIP](https://github.com/tronprotocol/java-tron/archive/develop.zip)**
+* If you'd rather not use Git, **[Download the ZIP](https://github.com/uniworld-io/unichain-core/archive/develop.zip)**
 
-## Including java-tron as dependency
+## Including unichain-core as dependency
 
 If you don't want to checkout the code and build the project, you can include it directly as a dependency.
 
@@ -37,7 +37,7 @@ repositories {
    maven { url 'https://jitpack.io' }
 }
 dependencies {
-   implementation 'com.github.tronprotocol:java-tron:develop-SNAPSHOT'
+   implementation 'com.github.uniworld-io:unichain-core:develop-SNAPSHOT'
 }
 ```
   
@@ -52,8 +52,8 @@ dependencies {
 </repositories>
 
 <dependency>
-    <groupId>com.github.tronprotocol</groupId>
-    <artifactId>java-tron</artifactId>
+    <groupId>com.github.uniworld-io</groupId>
+    <artifactId>unichain-core</artifactId>
     <version>develop-SNAPSHOT</version>
     <!--You can use any of the tag/branch name available-->
 </dependency>
@@ -64,7 +64,7 @@ dependencies {
 - **Building using the console:**
 
   ```bash
-  cd java-tron
+  cd unichain-core
   ./gradlew build
   ```
 
@@ -73,7 +73,7 @@ dependencies {
   **Please run `./gradlew build` once to build the protocol files**
 
   1. Start IntelliJ.  
-  Select `File` -> `Open`, then locate to the java-tron folder which you have git cloned to your local drive. Then click `Open` button on the right bottom.
+  Select `File` -> `Open`, then locate to the unichain-core folder which you have git cloned to your local drive. Then click `Open` button on the right bottom.
   2. Check on `Use auto-import` on the `Import Project from Gradle` dialog. Select JDK 1.8 in the `Gradle JVM` option. Then click `OK`.
   3. IntelliJ will import the project and start gradle syncing, which will take several minutes, depending on your network connection and your IntelliJ configuration
   4. Enable Annotations, `Preferences` -> Search `annotations` -> check `Enable Annotation Processing`.

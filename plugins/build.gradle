@@ -11,8 +11,8 @@ jacoco {
 def versions = [
         checkstyle: '8.7',
 ]
-mainClassName = 'org.tron.plugins.ArchiveManifest'
-group 'org.tron'
+mainClassName = 'org.unx.plugins.ArchiveManifest'
+group 'org.unx'
 version '1.0.0'
 
 configurations {
@@ -123,15 +123,15 @@ def createScript(project, mainClass, name) {
         }
     }
 }
-applicationDistribution.from("../gradle/java-tron.vmoptions") {
+applicationDistribution.from("../gradle/unichain-core.vmoptions") {
     into "bin"
 }
-createScript(project, 'org.tron.plugins.ArchiveManifest', 'ArchiveManifest')
+createScript(project, 'org.unx.plugins.ArchiveManifest', 'ArchiveManifest')
 
 def releaseBinary = hasProperty('binaryRelease') ? getProperty('binaryRelease') : 'true'
 if (releaseBinary == 'true') {
     artifacts {
-        archives(binaryRelease('buildArchiveManifestJar', 'ArchiveManifest', 'org.tron.plugins.ArchiveManifest'))
+        archives(binaryRelease('buildArchiveManifestJar', 'ArchiveManifest', 'org.unx.plugins.ArchiveManifest'))
     }
 }
 

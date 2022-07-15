@@ -17,7 +17,7 @@
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem
-@rem  ${applicationName} startup script for Windows tron
+@rem  ${applicationName} startup script for Windows unichain-core
 @rem
 @rem ##########################################################################
 

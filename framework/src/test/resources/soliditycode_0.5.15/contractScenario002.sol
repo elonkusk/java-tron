@@ -1,5 +1,5 @@
 //pragma solidity ^0.4.0;
-contract TronNative{
+contract UnxNative{
 
     address public voteContractAddress= address(0x10001);
     address public freezeBalanceAddress = address(0x10002);

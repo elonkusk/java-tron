@@ -1,4 +1,4 @@
-rootProject.name = 'java-tron'
+rootProject.name = 'unichain-core'
 include 'framework'
 include 'chainbase'
 include 'protocol'

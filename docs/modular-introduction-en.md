@@ -2,32 +2,32 @@
 
 ## Motivation
 
-An Ethereum-based game called CryptoKitties took up 16% of the platform's traffic at peak hours, making the network heavily congested. Though TRON network is 100 times more efficient than Ethereum, there's still a ceiling to it, so we have to expand the capacity horizontally by splitting java-tron into isolated modules.
+An Ethereum-based game called CryptoKitties took up 16% of the platform's traffic at peak hours, making the network heavily congested. Though UNX network is 100 times more efficient than Ethereum, there's still a ceiling to it, so we have to expand the capacity horizontally by splitting unichain-core into isolated modules.
 
-The modularized java-tron will allow DApp developers to easily create and deploy their own blockchains rather than simply develop an App on the chain (One DApp is One Chain), thus cutting the cost to build blockchain infrastructure and helping developers customize modules to their own needs, for example, by allowing them to select a well-suited consensus mechanism within an abstract consensus module. By modularizing java-tron, developers no longer get hassled by the underlying implementation details of a blockchain, and thus can focus more on their business scenarios.
+The modularized unichain-core will allow DApp developers to easily create and deploy their own blockchains rather than simply develop an App on the chain (One DApp is One Chain), thus cutting the cost to build blockchain infrastructure and helping developers customize modules to their own needs, for example, by allowing them to select a well-suited consensus mechanism within an abstract consensus module. By modularizing unichain-core, developers no longer get hassled by the underlying implementation details of a blockchain, and thus can focus more on their business scenarios.
 
-The aim of java-tron modularization is to enable developers to easily build a dedicated blockchain for an App. It has great advantages:
+The aim of unichain-core modularization is to enable developers to easily build a dedicated blockchain for an App. It has great advantages:
 
 1. Modularized code is easy to maintain and expand and making the system architecture clearer.
 2. With modularization, each module is an isolated component, making it easier to productize and perfect them.
 3. An interface-oriented development decouples the modules further, making them pluggable to adapt to different business scenarios.
 
-## Architecture of modularized java-tron
+## Architecture of modularized unichain-core
 
-![modular-structure](https://github.com/tronprotocol/java-tron/blob/develop/docs/images/module.png)
+![modular-structure](https://github.com/uniworld-io/unichain-core/blob/develop/docs/images/module.png)
 
-A modularized java-tron consists of six modules: framework, protocol, common, chainbase, consensus and actuator. The function of each module is elaborated below.
+A modularized unichain-core consists of six modules: framework, protocol, common, chainbase, consensus and actuator. The function of each module is elaborated below.
 
 ### framework
 
-As the core module of java-tron, framework performs as both a gateway to the blockchain and an adhesive that effectively connects all other modules. Framework initializes each module and facilitates communication between modules.
+As the core module of unichain-core, framework performs as both a gateway to the blockchain and an adhesive that effectively connects all other modules. Framework initializes each module and facilitates communication between modules.
 
 ### protocol
 
-A concise and efficient data transfer protocol is essential to a distributed network like blockchain. Protocol module defines the format of the binary protocol under which java-tron interacts with the outside world, allowing java-tron to interact with multiple platforms in diverse languages. The module also defines:
+A concise and efficient data transfer protocol is essential to a distributed network like blockchain. Protocol module defines the format of the binary protocol under which unichain-core interacts with the outside world, allowing unichain-core to interact with multiple platforms in diverse languages. The module also defines:
 
-1. the communication protocol between java-tron nodes
-2. protocol that java-tron provides to the public
+1. the communication protocol between unichain-core nodes
+2. protocol that unichain-core provides to the public
 
 ### common
 
@@ -41,7 +41,7 @@ In addition, chainbase module features a well-designed abstract interface. Any d
 Below are a few important implementation classes and interfaces in chainbase module:
 
 1. RevokingDatabase is the interface of database container that manages all databases that can roll back. SnapshotManager is an implementation of the interface.
-2. TronStoreWithRevoking is the base abstract class of databases that can roll back. Chainbase class is its implementation.
+2. UnxStoreWithRevoking is the base abstract class of databases that can roll back. Chainbase class is its implementation.
 
 ### consensus
 
@@ -58,7 +58,7 @@ Application developers can customize the consensus through ConsensusInterface. M
 
 ### actuator
 
-Ethereum was the first to introduce the virtual machine and defined the smart contract. However, smart contracts are constrained in terms of their functions and not flexible enough to accommodate the needs of complex applications. This is one of the reasons why java-tron support the creation of a chain of application. For the reasons mentioned, java-tron includes a separate module, Actuator, offering application developers a brand new way of development. They can choose to implant their application codes into a chain instead of running them on virtual machines. Actuator, therefore, is the executor of transactions, while applications can be viewed as a cluster of different types of transactions, each of which executed by a corresponding actuator.
+Ethereum was the first to introduce the virtual machine and defined the smart contract. However, smart contracts are constrained in terms of their functions and not flexible enough to accommodate the needs of complex applications. This is one of the reasons why unichain-core support the creation of a chain of application. For the reasons mentioned, unichain-core includes a separate module, Actuator, offering application developers a brand new way of development. They can choose to implant their application codes into a chain instead of running them on virtual machines. Actuator, therefore, is the executor of transactions, while applications can be viewed as a cluster of different types of transactions, each of which executed by a corresponding actuator.
 
 Actuator module defines the `Actuator` interface, which includes 4 different methods:
 1. execute: execute specific actions of transactions, such as state modification, communication between modules, logic execution, etc.

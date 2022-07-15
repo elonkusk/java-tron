@@ -24,7 +24,7 @@ then
 fi
 
 
-versionPath="src/main/java/org/tron/program/Version.java"
+versionPath="src/main/java/org/uni/program/Version.java"
 sed -i -e "s/VERSION_NAME.*$/VERSION_NAME = \"$versionName\";/g;s/VERSION_CODE.*$/VERSION_CODE = \"$versionCode\";/g" $versionPath
 git add $versionPath
 git commit -m "update a new version. version name:$versionName,version code:$versionCode"
