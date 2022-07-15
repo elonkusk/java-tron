@@ -381,8 +381,7 @@ public class AssetIssueActuatorTest {
       Assert.assertTrue(false);
     } catch (ContractValidateException e) {
       Assert.assertTrue(e instanceof ContractValidateException);
-      Assert.assertTrue(("" +
-              must greater than 0!").equals(e.getMessage()));
+      Assert.assertTrue("UnwNum must greater than 0!".equals(e.getMessage()));
       AccountCapsule owner = dbManager.getAccountStore()
           .get(ByteArray.fromHexString(OWNER_ADDRESS));
       AssetIssueCapsule assetIssueCapsule = dbManager.getAssetIssueStore()
