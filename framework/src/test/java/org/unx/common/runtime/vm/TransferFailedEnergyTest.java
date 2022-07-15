@@ -38,7 +38,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
           msg.sender.send(10);
       }
 
-      function testTransferTokenInsufficientBalance(trcToken tokenId) payable public{
+      function testTransferTokenInsufficientBalance(urcToken tokenId) payable public{
           msg.sender.transferToken(10, tokenId);
       }
 
@@ -57,7 +57,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
       }
 
       function testTransferTokenNonexistentTarget(address payable nonexistentTarget,
-       trcToken tokenId) payable public {
+       urcToken tokenId) payable public {
           require(address(this).balance >= 10);
           nonexistentTarget.transferToken(10, tokenId);
       }
@@ -84,7 +84,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
           self.send(10);
       }
 
-      function testTransferTokenSelf(trcToken tokenId) payable public{
+      function testTransferTokenSelf(urcToken tokenId) payable public{
           require(address(this).balance >= 10);
           address payable self = address(uint160(address(this)));
           self.transferToken(10, tokenId);
@@ -116,7 +116,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
           msg.sender.send(10);
       }
 
-      function testTransferTokenInsufficientBalance(trcToken tokenId) payable public{
+      function testTransferTokenInsufficientBalance(urcToken tokenId) payable public{
           msg.sender.transferToken(10, tokenId);
       }
 
@@ -135,7 +135,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
       }
 
       function testTransferTokenNonexistentTarget(address nonexistentTarget,
-       trcToken tokenId) payable public {
+       urcToken tokenId) payable public {
           require(address(this).balance >= 10);
           nonexistentTarget.transferToken(10, tokenId);
       }
@@ -162,7 +162,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
           self.send(10);
       }
 
-      function testTransferTokenSelf(trcToken tokenId) payable public{
+      function testTransferTokenSelf(urcToken tokenId) payable public{
           require(address(this).balance >= 10);
           address self = address(uint160(address(this)));
           self.transferToken(10, tokenId);
@@ -219,7 +219,7 @@ public class TransferFailedEnergyTest extends VMTestBase {
       new TestCase("testCallUnwInsufficientBalance()", Collections.emptyList(),
           false,
           contractResult.REVERT),
-      new TestCase("testTransferTokenInsufficientBalance(trcToken)",
+      new TestCase("testTransferTokenInsufficientBalance(urcToken)",
           Collections.singletonList(1000001), false, contractResult.REVERT),
   };
 

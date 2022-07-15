@@ -6,7 +6,7 @@ contract Dest {
 
  constructor() payable public {}
 
-    function getToken(trcToken tokenId) payable public{
+    function getToken(urcToken tokenId) payable public{
       emit  logGetToken(msg.sender.tokenBalance(tokenId), msg.tokenid, msg.tokenvalue, msg.value);
  }
 

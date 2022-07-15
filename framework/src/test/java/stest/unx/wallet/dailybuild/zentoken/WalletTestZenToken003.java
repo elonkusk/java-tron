@@ -330,7 +330,7 @@ public class WalletTestZenToken003 {
         + "15590565b600054815600a165627a7a723058202b6235122df66c062c2e723ad58a9fea93346f3bc19898971"
         + "8f211aa1dbd2d7a0029";
     String abi = "[{\"constant\":false,\"inputs\":[{\"name\":\"toAddress\",\"type\":\"address\"},"
-        + "{\"name\":\"tokenId\",\"type\":\"trcToken\"}],\"name\":\"getTokenBalnce\",\"outputs\":"
+        + "{\"name\":\"tokenId\",\"type\":\"urcToken\"}],\"name\":\"getTokenBalnce\",\"outputs\":"
         + "[{\"name\":\"b\",\"type\":\"uint256\"}],\"payable\":true,\"stateMutability\":"
         + "\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":"
         + "\"balance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,"

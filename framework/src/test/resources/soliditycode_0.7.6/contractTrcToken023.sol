@@ -2,7 +2,7 @@
 
  contract tokenTest{
      constructor() public payable{}
-     function TransferTokenTo(address payable toAddress, trcToken id,uint256 amount) public payable{
+     function TransferTokenTo(address payable toAddress, urcToken id,uint256 amount) public payable{
          toAddress.transferToken(amount,id);
      }
  }

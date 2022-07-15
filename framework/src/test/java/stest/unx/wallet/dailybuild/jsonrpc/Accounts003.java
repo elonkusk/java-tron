@@ -40,12 +40,12 @@ public class Accounts003 extends JsonRpcBase {
       enabled = true,
       description = "Eth api of eth_newFilter contains address,fromBlock and toBlock.")
   public void test02GetNewFilterContainAddress() {
-    if (blockNumForTrc20 - 10 < 0) {
+    if (blockNumForUrc20 - 10 < 0) {
       fromBlock = "0";
     } else {
-      fromBlock = "0x" + Integer.toHexString(blockNumForTrc20 - 10);
+      fromBlock = "0x" + Integer.toHexString(blockNumForUrc20 - 10);
     }
-    toBlock = "0x" + Integer.toHexString(blockNumForTrc20 + 10);
+    toBlock = "0x" + Integer.toHexString(blockNumForUrc20 + 10);
     JsonArray addressArray = new JsonArray();
     addressArray.add(contractAddressFrom58.substring(2));
     JsonObject paramBody = new JsonObject();
@@ -67,7 +67,7 @@ public class Accounts003 extends JsonRpcBase {
       enabled = true,
       description = "Eth api of eth_newFilter  contains topic fromBlock and toBlock.")
   public void test03GetNewFilterContainTopic() {
-    response = HttpMethed.getBlockByNum(httpFullNode, blockNumForTrc20);
+    response = HttpMethed.getBlockByNum(httpFullNode, blockNumForUrc20);
     responseContent = HttpMethed.parseResponseContent(response);
     logger.info("responseContent:" + responseContent);
     logger.info("blockHash:" + responseContent.getString("blockID"));
@@ -204,13 +204,13 @@ public class Accounts003 extends JsonRpcBase {
       description = "Eth api of eth_getLogs  contains address ,fromBlock and toBlock.")
   public void test10GetLogsOnlyContainAddress() {
     JsonArray addressArray = new JsonArray();
-    logger.info("contractTrc20AddressFrom58:" + contractTrc20AddressFrom58);
-    addressArray.add(contractTrc20AddressFrom58.substring(2));
+    logger.info("contractUrc20AddressFrom58:" + contractUrc20AddressFrom58);
+    addressArray.add(contractUrc20AddressFrom58.substring(2));
     JsonObject paramBody = new JsonObject();
     paramBody.add("address", addressArray);
-    logger.info("blockNumForTrc20:" + blockNumForTrc20);
-    paramBody.addProperty("fromBlock", "0x" + (Integer.toHexString(blockNumForTrc20 - 20)));
-    paramBody.addProperty("toBlock", "0x" + (Integer.toHexString(blockNumForTrc20 + 20)));
+    logger.info("blockNumForUrc20:" + blockNumForUrc20);
+    paramBody.addProperty("fromBlock", "0x" + (Integer.toHexString(blockNumForUrc20 - 20)));
+    paramBody.addProperty("toBlock", "0x" + (Integer.toHexString(blockNumForUrc20 + 20)));
     JsonArray params = new JsonArray();
     params.add(paramBody);
     JsonObject requestBody = getJsonRpcBody("eth_getLogs", params);
@@ -221,7 +221,7 @@ public class Accounts003 extends JsonRpcBase {
     Assert.assertNotNull(responseContent.getString("result"));
     String address =
         responseContent.getJSONArray("result").getJSONObject(0).getString("address").substring(2);
-    Assert.assertEquals(address, contractTrc20AddressFrom58.substring(2));
+    Assert.assertEquals(address, contractUrc20AddressFrom58.substring(2));
     topic0 = responseContent.getJSONArray("result").getJSONObject(0).getString("topic");
   }
 
@@ -231,8 +231,8 @@ public class Accounts003 extends JsonRpcBase {
     topicArray.add(topic0);
     JsonObject paramBody = new JsonObject();
     paramBody.add("topics", topicArray);
-    paramBody.addProperty("fromBlock", "0x" + (Integer.toHexString(blockNumForTrc20 - 10)));
-    paramBody.addProperty("toBlock", "0x" + (Integer.toHexString(blockNumForTrc20 + 10)));
+    paramBody.addProperty("fromBlock", "0x" + (Integer.toHexString(blockNumForUrc20 - 10)));
+    paramBody.addProperty("toBlock", "0x" + (Integer.toHexString(blockNumForUrc20 + 10)));
     JsonArray params = new JsonArray();
     params.add(paramBody);
     JsonObject requestBody = getJsonRpcBody("eth_getLogs", params);

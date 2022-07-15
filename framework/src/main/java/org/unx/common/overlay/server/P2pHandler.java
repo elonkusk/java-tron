@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 import org.unx.common.overlay.discover.node.statistics.MessageStatistics;
 import org.unx.common.overlay.message.DisconnectMessage;
 import org.unx.common.overlay.message.P2pMessage;
+import org.unx.protos.Protocol.ReasonCode;
 import org.unx.core.net.message.MessageTypes;
 import org.unx.common.overlay.message.StaticMessages;
-import org.unx.protos.Protocol.ReasonCode;
 
 @Slf4j(topic = "net")
 @Component

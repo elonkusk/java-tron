@@ -6,7 +6,7 @@ contract IllegalDecorate {
 
     fallback() payable external{}
 
-    function transferTokenWithView(address payable toAddress,trcToken id, uint256 tokenValue) public view{
+    function transferTokenWithView(address payable toAddress,urcToken id, uint256 tokenValue) public view{
 
         toAddress.transferToken(tokenValue, id);
 

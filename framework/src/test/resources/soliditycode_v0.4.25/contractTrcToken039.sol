@@ -5,10 +5,10 @@ pragma solidity ^0.4.24;
  * 3. caller部署A
  * 4. caller部署B
  * 5. caller调用proxy中upgradetTo函数，传入A的地址
- * 6. caller调用proxy中不存在的trans(uint256,address,trcToken)函数，注意这时trcToken是无意义的，但也带上tokenid。address是任意另外某账户的地址
+ * 6. caller调用proxy中不存在的trans(uint256,address,urcToken)函数，注意这时urcToken是无意义的，但也带上tokenid。address是任意另外某账户的地址
  * 7. 可以看到目标地址unx增长5，caller账户unx减少5
  * 8. caller调用proxy中upgradeTo函数，传入B的地址
- * 9. caller调用proxy中不存在的trans(uint256,address,trcToken)函数。
+ * 9. caller调用proxy中不存在的trans(uint256,address,urcToken)函数。
  * 10. 可以看到目标地址token增长5，caller账户token减少5
 */
 contract Proxy {
@@ -33,12 +33,12 @@ contract Proxy {
 }
 
 contract A {
-    function trans(uint256 amount, address toAddress, trcToken id) payable public {
+    function trans(uint256 amount, address toAddress, urcToken id) payable public {
         toAddress.transfer(amount);
     }
 }
 contract B{
-    function trans(uint256 amount, address toAddress, trcToken id) payable public {
+    function trans(uint256 amount, address toAddress, urcToken id) payable public {
         toAddress.transferToken(amount,id);
     }
 }

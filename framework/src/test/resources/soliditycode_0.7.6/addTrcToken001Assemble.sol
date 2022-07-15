@@ -2,8 +2,8 @@
 
 contract InAssemble {
 
-mapping(trcToken => uint256) tokenCnt;
-mapping(uint256 => mapping(trcToken => trcToken)) cntTokenToken;
+mapping(urcToken => uint256) tokenCnt;
+mapping(uint256 => mapping(urcToken => urcToken)) cntTokenToken;
 constructor () payable public {}
 function getBalance (address addr) view public returns(uint256 r) {
 assembly{
@@ -11,19 +11,19 @@ r := balance(addr)
 }
 }
 
-function getTokenBalanceConstant  (address addr, trcToken tokenId) view public returns(uint256 r) {
+function getTokenBalanceConstant  (address addr, urcToken tokenId) view public returns(uint256 r) {
 assembly{
 r := tokenbalance(tokenId, addr)
 }
 }
 
-function getTokenBalance (address addr, trcToken tokenId) public returns(uint256 r) {
+function getTokenBalance (address addr, urcToken tokenId) public returns(uint256 r) {
 assembly{
 r := tokenbalance(tokenId, addr)
 }
 }
 
-function transferTokenInAssembly(address addr, trcToken tokenId, uint256 tokenValue) public payable {
+function transferTokenInAssembly(address addr, urcToken tokenId, uint256 tokenValue) public payable {
 bytes4 sig = bytes4(keccak256("()")); // function signature
 
 assembly {
@@ -50,12 +50,12 @@ mstore(0x40, add(x,0x20)) // update free memory pointer
 
 }
 
-function trcTokenInMap(trcToken tokenId, uint256 tokenValue) public returns(uint256 r) {
+function urcTokenInMap(urcToken tokenId, uint256 tokenValue) public returns(uint256 r) {
 tokenCnt[tokenId] += tokenValue;
 r = tokenCnt[tokenId];
 }
 
-function cntTokenTokenInMap(trcToken tokenId1, trcToken tokenId2, uint256 tokenValue) public returns(trcToken r) {
+function cntTokenTokenInMap(urcToken tokenId1, urcToken tokenId2, uint256 tokenValue) public returns(urcToken r) {
 cntTokenToken[tokenValue][tokenId1] = tokenId2;
 r = cntTokenToken[tokenValue][tokenId1];
 }

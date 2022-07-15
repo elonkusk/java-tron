@@ -16,23 +16,23 @@ contract EnergyOfTransferFailedTest {
     }
 
     function testTransferTokenCompiledLongMin1() payable public returns(uint256){
-        return address(0x2).tokenBalance(trcToken(-9223372036855775828));
+        return address(0x2).tokenBalance(urcToken(-9223372036855775828));
     }
 
     function testTransferTokenCompiled1() payable public returns(uint256){
-        return address(0x1).tokenBalance(trcToken(1));
+        return address(0x1).tokenBalance(urcToken(1));
     }
 
     function testTransferTokenCompiledLongMax1() payable public returns(uint256){
-        return address(0x2).tokenBalance(trcToken(9223372036855775827));
+        return address(0x2).tokenBalance(urcToken(9223372036855775827));
     }
 
     function testTransferTokenCompiledTokenId(uint256 tokenid) payable public returns(uint256){
-         return address(0x1).tokenBalance(trcToken(tokenid));
+         return address(0x1).tokenBalance(urcToken(tokenid));
     }
 
     function testTransferTokenTest(address addr ,uint256 tokenid) payable public returns(uint256){
-          return  addr.tokenBalance(trcToken(tokenid));
+          return  addr.tokenBalance(urcToken(tokenid));
     }
 
     // InsufficientBalance
@@ -44,7 +44,7 @@ contract EnergyOfTransferFailedTest {
         msg.sender.send(i);
     }
 
-    function testTransferTokenInsufficientBalance(uint256 i,trcToken tokenId) payable public{
+    function testTransferTokenInsufficientBalance(uint256 i,urcToken tokenId) payable public{
         msg.sender.transferToken(i, tokenId);
     }
 
@@ -76,11 +76,11 @@ contract EnergyOfTransferFailedTest {
         revert();
     }
 
-    function testTransferTokenNonexistentTarget(uint256 i,address payable nonexistentTarget, trcToken tokenId) payable public {
+    function testTransferTokenNonexistentTarget(uint256 i,address payable nonexistentTarget, urcToken tokenId) payable public {
         nonexistentTarget.transferToken(i, tokenId);
     }
 
-    function testTransferTokenRevert(uint256 i,address payable nonexistentTarget, trcToken tokenId) payable public {
+    function testTransferTokenRevert(uint256 i,address payable nonexistentTarget, urcToken tokenId) payable public {
         nonexistentTarget.transferToken(i, tokenId);
         revert();
     }
@@ -109,7 +109,7 @@ contract EnergyOfTransferFailedTest {
         self.send(i);
     }
 
-    function testTransferTokenSelf(uint256 i,trcToken tokenId) payable public{
+    function testTransferTokenSelf(uint256 i,urcToken tokenId) payable public{
         address payable self = address(uint160(address(this)));
         self.transferToken(i, tokenId);
     }

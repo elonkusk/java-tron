@@ -66,9 +66,9 @@ public class HttpTestGetAccountBalance001 {
 
     String contractName = "transferTokenContract";
     String code = Configuration.getByPath("testng.conf")
-        .getString("code.code_ContractTrcToken001_transferTokenContract");
+        .getString("code.code_ContractUrcToken001_transferTokenContract");
     String abi = Configuration.getByPath("testng.conf")
-        .getString("abi.abi_ContractTrcToken001_transferTokenContract");
+        .getString("abi.abi_ContractUrcToken001_transferTokenContract");
     txid = HttpMethed
         .deployContractGetTxid(httpnode, contractName, abi, code, 1000000L, 1000000000L, 100,
             11111111111111L, 0L, 0, 0L, assetOwnerAddress, assetOwnerKey);

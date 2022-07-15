@@ -7,7 +7,7 @@ contract Dest {
 
  function Dest() payable public {}
 
-    function getToken(trcToken tokenId) payable {
+    function getToken(urcToken tokenId) payable {
         logGetToken(msg.sender.tokenBalance(tokenId), msg.tokenid, msg.tokenvalue, msg.value);
  }
 

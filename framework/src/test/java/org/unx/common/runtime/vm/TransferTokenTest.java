@@ -118,10 +118,10 @@ public class TransferTokenTest {
    * pragma solidity ^0.4.24;
    *
    * contract tokenTest{ constructor() public payable{} // positive case function
-   * TransferTokenTo(address toAddress, trcToken id,uint256 amount) public payable{
+   * TransferTokenTo(address toAddress, urcToken id,uint256 amount) public payable{
    * toAddress.transferToken(amount,id); } function suicide(address toAddress) payable public{
-   * selfdestruct(toAddress); } function get(trcToken trc) public payable returns(uint256){ return
-   * address(this).tokenBalance(trc); } }
+   * selfdestruct(toAddress); } function get(urcToken urc) public payable returns(uint256){ return
+   * address(this).tokenBalance(urc); } }
    *
    * 1. deploy 2. trigger and internal transaction 3. suicide (all token)
    */
@@ -138,7 +138,7 @@ public class TransferTokenTest {
                 .getAssetV2MapForTest().get(String.valueOf(id)).longValue());
     Assert.assertEquals(1000, dbManager.getAccountStore().get(contractAddress).getBalance());
 
-    String selectorStr = "TransferTokenTo(address,trcToken,uint256)";
+    String selectorStr = "TransferTokenTo(address,urcToken,uint256)";
     String params = "000000000000000000000000548794500882809695a8a687866e76d4271a1abc"
         + Hex.toHexString(new DataWord(id).getData())
         //TRANSFER_TO, 100001, 9
@@ -222,7 +222,7 @@ public class TransferTokenTest {
 
   /**
    * contract tokenPerformanceTest{ uint256 public counter = 0; constructor() public payable{} //
-   * positive case function TransferTokenTo(address toAddress, trcToken id,uint256 amount) public
+   * positive case function TransferTokenTo(address toAddress, urcToken id,uint256 amount) public
    * payable{ while(true){ counter++; toAddress.transferToken(amount,id); } } }
    */
   @Test
@@ -234,7 +234,7 @@ public class TransferTokenTest {
     long triggerCallValue = 100;
     long feeLimit = 1000_000_000;
     long tokenValue = 0;
-    String selectorStr = "trans(address,trcToken,uint256)";
+    String selectorStr = "trans(address,urcToken,uint256)";
     String params = "000000000000000000000000548794500882809695a8a687866e76d4271a1abc"
         + Hex.toHexString(new DataWord(id).getData())
         + "0000000000000000000000000000000000000000000000000000000000000002";

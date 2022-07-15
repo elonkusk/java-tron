@@ -57,34 +57,34 @@ public class ShieldUrc20Token002 extends ZenUrc20Base {
    * constructor.
    */
   @Test(enabled = true, description = "Send shield urc20 from T account to shield account")
-  public void test01ShieldTrc20TransactionByTypeMint() throws Exception {
+  public void test01ShieldUrc20TransactionByTypeMint() throws Exception {
     //Query account before mint balance
-    final Long beforeMintAccountBalance = getBalanceOfShieldTrc20(zenTrc20TokenOwnerAddressString,
-        zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+    final Long beforeMintAccountBalance = getBalanceOfShieldUrc20(zenUrc20TokenOwnerAddressString,
+        zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
     //Query contract before mint balance
-    final Long beforeMintShieldAccountBalance = getBalanceOfShieldTrc20(shieldAddress,
-        zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+    final Long beforeMintShieldAccountBalance = getBalanceOfShieldUrc20(shieldAddress,
+        zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
     //Generate new shiled account and set note memo
     receiverShieldAddressInfo = getNewShieldedAddress(blockingStubFull);
     String memo = "Shield urc20 from T account to shield account in" + System.currentTimeMillis();
     String receiverShieldAddress = receiverShieldAddressInfo.get().getAddress();
 
     shieldOutList.clear();
-    shieldOutList = addShieldTrc20OutputList(shieldOutList, receiverShieldAddress,
+    shieldOutList = addShieldUrc20OutputList(shieldOutList, receiverShieldAddress,
         "" + publicFromAmount, memo, blockingStubFull);
 
     //Create shiled urc20 parameters
-    GrpcAPI.ShieldedURC20Parameters shieldedTrc20Parameters
-        = createShieldedTrc20Parameters(publicFromAmount,
+    GrpcAPI.ShieldedURC20Parameters shieldedUrc20Parameters
+        = createShieldedUrc20Parameters(publicFromAmount,
         null, null, shieldOutList, "", 0L,
         blockingStubFull, blockingStubSolidity
     );
-    String data = encodeMintParamsToHexString(shieldedTrc20Parameters, publicFromAmount);
+    String data = encodeMintParamsToHexString(shieldedUrc20Parameters, publicFromAmount);
 
     //Do mint transaction type
     String txid = PublicMethed.triggerContract(shieldAddressByte,
-        mint, data, true, 0, maxFeeLimit, zenTrc20TokenOwnerAddress,
-        zenTrc20TokenOwnerKey, blockingStubFull);
+        mint, data, true, 0, maxFeeLimit, zenUrc20TokenOwnerAddress,
+        zenUrc20TokenOwnerKey, blockingStubFull);
     PublicMethed.waitProduceNextBlock(blockingStubFull);
     PublicMethed.waitProduceNextBlock(blockingStubFull);
     Optional<TransactionInfo> infoById = PublicMethed
@@ -96,18 +96,18 @@ public class ShieldUrc20Token002 extends ZenUrc20Base {
     Assert.assertTrue(infoById.get().getReceipt().getResultValue() == 1);
 
     //Query account after mint balance
-    Long afterMintAccountBalance = getBalanceOfShieldTrc20(zenTrc20TokenOwnerAddressString,
-        zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+    Long afterMintAccountBalance = getBalanceOfShieldUrc20(zenUrc20TokenOwnerAddressString,
+        zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
     //Query contract after mint balance
-    Long afterMintShieldAccountBalance = getBalanceOfShieldTrc20(shieldAddress,
-        zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+    Long afterMintShieldAccountBalance = getBalanceOfShieldUrc20(shieldAddress,
+        zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
 
     Assert.assertEquals(BigInteger.valueOf(beforeMintAccountBalance - afterMintAccountBalance),
         publicFromAmount);
     Assert.assertEquals(BigInteger.valueOf(afterMintShieldAccountBalance
         - beforeMintShieldAccountBalance), publicFromAmount);
 
-    GrpcAPI.DecryptNotesURC20 note = scanShieldedTrc20NoteByIvk(receiverShieldAddressInfo.get(),
+    GrpcAPI.DecryptNotesURC20 note = scanShieldedUrc20NoteByIvk(receiverShieldAddressInfo.get(),
         blockingStubFull);
     logger.info("" + note);
 

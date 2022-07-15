@@ -38,7 +38,7 @@ public class ShieldUrc20Token001 extends ZenUrc20Base {
   @Test(enabled = true, description = "Check shield contract deploy success")
   public void test01checkShieldContractDeploySuccess() {
     Optional<TransactionInfo> infoById = PublicMethed
-        .getTransactionInfoById(deployShieldTrc20Txid, blockingStubFull);
+        .getTransactionInfoById(deployShieldUrc20Txid, blockingStubFull);
     Assert.assertTrue(infoById.get().getReceipt().getResultValue() == 1);
     infoById = PublicMethed
         .getTransactionInfoById(deployShieldTxid, blockingStubFull);
@@ -51,7 +51,7 @@ public class ShieldUrc20Token001 extends ZenUrc20Base {
   public void test02ViewScalingFactor() {
     String txid = PublicMethed.triggerContract(shieldAddressByte,
         "scalingFactor()", "", false,
-        0, maxFeeLimit, zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+        0, maxFeeLimit, zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
     Optional<TransactionInfo> infoById = PublicMethed
         .getTransactionInfoById(txid, blockingStubFull);
     logger.info(txid);
@@ -60,7 +60,7 @@ public class ShieldUrc20Token001 extends ZenUrc20Base {
     TransactionExtention transactionExtention = PublicMethed
         .triggerConstantContractForExtention(shieldAddressByte, "scalingFactor()",
             "", false, 0, 0, "0", 0,
-            zenTrc20TokenOwnerAddress, zenTrc20TokenOwnerKey, blockingStubFull);
+            zenUrc20TokenOwnerAddress, zenUrc20TokenOwnerKey, blockingStubFull);
 
     logger.info("transactionExtention:" + transactionExtention);
     String scalingFactor = PublicMethed

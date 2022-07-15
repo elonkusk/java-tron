@@ -62,9 +62,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     //HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
 
@@ -77,9 +77,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     //HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
 
@@ -88,7 +88,7 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
 
   @Test(enabled = true, description = "Transfer type with 1V1 by http")
   public void test01TransferTypeWith1V1ByHttp() {
-    account1IvkNoteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo1);
+    account1IvkNoteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo1);
     shieldSpends.clear();
     shieldSpends = createAndSetShieldedSpends(httpnode, shieldSpends, account1IvkNoteTxs
         .getJSONObject(0));
@@ -101,9 +101,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
@@ -116,18 +116,18 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"),
         "SUCCESS");
 
-    account1OvkNoteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo1);
+    account1OvkNoteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo1);
     logger.info(account1OvkNoteTxs.toJSONString());
     Assert.assertEquals(account1OvkNoteTxs.size(), 1);
   }
 
   @Test(enabled = true, description = "Transfer type with 1V2 by http")
   public void test02TransferTypeWith1V2ByHttp() {
-    account1IvkNoteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo1);
+    account1IvkNoteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo1);
 
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(0)));
-    Assert.assertFalse(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    Assert.assertFalse(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(1)));
     shieldSpends.clear();
     shieldSpends = createAndSetShieldedSpends(httpnode, shieldSpends, account1IvkNoteTxs
@@ -145,9 +145,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertTrue(responseContent.containsKey("trigger_contract_input"));
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
     response = HttpMethed.getTransactionInfoById(httpnode, txid, true);
@@ -159,7 +159,7 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"),
         "SUCCESS");
 
-    account1OvkNoteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo1);
+    account1OvkNoteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo1);
     logger.info(account1OvkNoteTxs.toJSONString());
     Assert.assertEquals(account1OvkNoteTxs.size(), 3);
   }
@@ -167,11 +167,11 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
 
   @Test(enabled = true, description = "Transfer type with 2V2 by http")
   public void test03TransferTypeWith2V2ByHttp() {
-    account2IvkNoteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo2);
+    account2IvkNoteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo2);
 
-    Assert.assertFalse(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
+    Assert.assertFalse(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
         account2IvkNoteTxs.getJSONObject(0)));
-    Assert.assertFalse(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
+    Assert.assertFalse(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
         account2IvkNoteTxs.getJSONObject(1)));
     shieldSpends.clear();
     shieldSpends = createAndSetShieldedSpends(httpnode, shieldSpends, account2IvkNoteTxs
@@ -190,9 +190,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertTrue(responseContent.containsKey("trigger_contract_input"));
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
     response = HttpMethed.getTransactionInfoById(httpnode, txid, true);
@@ -204,24 +204,24 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"),
         "SUCCESS");
 
-    account2OvkNoteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo2);
+    account2OvkNoteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo2);
     logger.info(account1OvkNoteTxs.toJSONString());
     Assert.assertEquals(account2OvkNoteTxs.size(), 2);
 
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
         account2IvkNoteTxs.getJSONObject(0)));
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo2,
         account2IvkNoteTxs.getJSONObject(1)));
 
   }
 
   @Test(enabled = true, description = "Transfer type with 2V1 by http")
   public void test04TransferTypeWith2V1ByHttp() {
-    account1IvkNoteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo1);
+    account1IvkNoteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo1);
 
-    Assert.assertFalse(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    Assert.assertFalse(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(2)));
-    Assert.assertFalse(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    Assert.assertFalse(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(3)));
     shieldSpends.clear();
     shieldSpends = createAndSetShieldedSpends(httpnode, shieldSpends, account1IvkNoteTxs
@@ -241,9 +241,9 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertTrue(responseContent.containsKey("trigger_contract_input"));
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, transfer, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
 
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
@@ -256,14 +256,14 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"),
         "SUCCESS");
 
-    account1OvkNoteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo1);
+    account1OvkNoteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo1);
     logger.info(account1OvkNoteTxs.toJSONString());
     Assert.assertEquals(account1OvkNoteTxs.size(), 4);
 
-    account1IvkNoteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo1);
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    account1IvkNoteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo1);
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(2)));
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpent(httpnode, shieldAccountInfo1,
         account1IvkNoteTxs.getJSONObject(3)));
 
   }
@@ -271,11 +271,11 @@ public class HttpShieldUrc20Token003 extends ZenUrc20Base {
 
   @Test(enabled = true, description = "Query is shielded urc20 contract note spent on "
       + "solidity by http")
-  public void test05QueryIsShieldedTrc20ContractNoteSpentByHttp() {
+  public void test05QueryIsShieldedUrc20ContractNoteSpentByHttp() {
     HttpMethed.waitToProduceOneBlockFromSolidity(httpnode, httpSolidityNode);
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpentOnSolidity(httpSolidityNode,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpentOnSolidity(httpSolidityNode,
         shieldAccountInfo1, account1IvkNoteTxs.getJSONObject(2)));
-    Assert.assertTrue(isShieldedTrc20ContractNoteSpentOnSolidity(httpSolidityNode,
+    Assert.assertTrue(isShieldedUrc20ContractNoteSpentOnSolidity(httpSolidityNode,
         shieldAccountInfo1, account1IvkNoteTxs.getJSONObject(3)));
   }
 

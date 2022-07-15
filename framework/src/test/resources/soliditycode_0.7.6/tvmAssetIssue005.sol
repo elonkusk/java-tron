@@ -1,6 +1,6 @@
 
 
-contract tvmAssetIssue005 {
+contract uvmAssetIssue005 {
     constructor() payable public{}
 
     fallback() external payable {
@@ -10,15 +10,15 @@ contract tvmAssetIssue005 {
         return assetissue(name, abbr, totalSupply, precision);
     }
 
-    function updateAsset(trcToken tokenId, string memory url, string memory desc) public returns (bool) {
+    function updateAsset(urcToken tokenId, string memory url, string memory desc) public returns (bool) {
         return updateasset(tokenId, bytes(url), bytes(desc));
     }
 
-    function updateAssetOnBytes(trcToken tokenId, bytes memory url, bytes memory desc) public returns (bool) {
+    function updateAssetOnBytes(urcToken tokenId, bytes memory url, bytes memory desc) public returns (bool) {
         return updateasset(tokenId, url, desc);
     }
 
-    function transferToken(address payable toAddress, uint256 tokenValue, trcToken id) payable public {
+    function transferToken(address payable toAddress, uint256 tokenValue, urcToken id) payable public {
         toAddress.transferToken(tokenValue, id);
     }
 
@@ -32,7 +32,7 @@ contract B {
 
     function deploy(uint256 salt) public returns (address) {
         address addr;
-        bytes memory code = type(tvmAssetIssue005).creationCode;
+        bytes memory code = type(uvmAssetIssue005).creationCode;
         assembly {
             addr := create2(0, add(code, 0x20), mload(code), salt)
             if iszero(extcodesize(addr)) {

@@ -286,7 +286,7 @@ public class SupportUnxlinkAutoTest {
 
 
   @Test(enabled = true, threadPoolSize = 1, invocationCount = 1)
-  public void test005SendTrc20() {
+  public void test005SendUrc20() {
 
     String[] witnessKey = {
         "TR8CyAPJFMjCvphCVuWeeVxBh5iTG7VWxe",
@@ -317,7 +317,7 @@ public class SupportUnxlinkAutoTest {
       System.out.println(triggerString);
       //dapp chain urc20 tract TXkdXbzjoLpxGAD2strP1zwjJzR6osNfD7
       byte[] contractAddress = PublicMethed.decode58Check("TXkdXbzjoLpxGAD2strP1zwjJzR6osNfD7");
-      //main chain TRC 20 contract TCCcBZEdTHmS1NfFtCYfwpjBKeTv515n71
+      //main chain URC 20 contract TCCcBZEdTHmS1NfFtCYfwpjBKeTv515n71
       //byte[] contractAddress =  PublicMethed.decode58Check("TCCcBZEdTHmS1NfFtCYfwpjBKeTv515n71");
 
       PublicMethed

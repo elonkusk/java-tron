@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
  contract tokenTest{
      constructor() public payable{}
-     function TransferTokenTo(address toAddress, trcToken id,uint256 amount) public payable{
+     function TransferTokenTo(address toAddress, urcToken id,uint256 amount) public payable{
          toAddress.transferToken(amount,id);
      }
  }

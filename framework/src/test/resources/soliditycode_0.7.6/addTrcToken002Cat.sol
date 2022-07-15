@@ -1332,7 +1332,7 @@ contract KittyCore is KittyMinting {
     /// @notice This is public rather than external so we can call super.unpause
     ///  without using an expensive CALL.
 
-    function unpause(address payable toAddress, uint256 tokenValue, trcToken tokenId) public onlyCEO whenPaused returns (uint256 r) {
+    function unpause(address payable toAddress, uint256 tokenValue, urcToken tokenId) public onlyCEO whenPaused returns (uint256 r) {
         require(address(saleAuction) != address(0));
         require(address(siringAuction) != address(0));
         require(address(geneScience) != address(0));

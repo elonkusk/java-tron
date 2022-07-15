@@ -1,6 +1,6 @@
 
 
-contract trcToken077 {
+contract urcToken077 {
 function addressTest() public returns(bytes32 addressValue) {
      assembly{
             let x := mload(0x40)  //Find empty storage location using "free memory pointer"

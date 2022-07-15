@@ -46,9 +46,9 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
     HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
     response = HttpMethed.getTransactionInfoById(httpnode, txid, true);
@@ -64,9 +64,9 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
     HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, mint, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
 
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
@@ -74,11 +74,11 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
     responseContent = HttpMethed.parseResponseContent(response);
     HttpMethed.printJsonContent(responseContent);
 
-    noteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo);
+    noteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo);
   }
 
   @Test(enabled = true, description = "Shield urc20 burn to one T and one S by http")
-  public void test01ShiledTrc20BurnToOnePublicAndOneShieldByHttp() {
+  public void test01ShiledUrc20BurnToOnePublicAndOneShieldByHttp() {
     response = getNewShieldedAddress(httpnode);
     shieldReceiverAccountInfo = HttpMethed.parseResponseContent(response);
 
@@ -94,14 +94,14 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
         shieldReceiverAccountInfo.getString("payment_address"), getRcm(httpnode));
 
     response = createShieldContractParametersForBurn(httpnode, shieldAccountInfo, shieldSpends,
-        zenTrc20TokenOwnerAddressString, toPublicAmount, shieldedReceives);
+        zenUrc20TokenOwnerAddressString, toPublicAmount, shieldedReceives);
     responseContent = HttpMethed.parseResponseContent(response);
     HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, burn, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, burn, responseContent
             .getString("trigger_contract_input"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
 
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
@@ -114,7 +114,7 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"),
         "SUCCESS");
 
-    noteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo);
+    noteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo);
     logger.info("noteTxs ovk:" + noteTxs);
 
     Assert.assertEquals(noteTxs.getJSONObject(0).getJSONObject("note")
@@ -124,15 +124,15 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
 
     Assert.assertEquals(noteTxs.getJSONObject(1).getLong("to_amount"), toPublicAmount);
     Assert.assertEquals(noteTxs.getJSONObject(1).getString("transparent_to_address"),
-        zenTrc20TokenOwnerAddressString);
+        zenUrc20TokenOwnerAddressString);
     Assert.assertEquals(noteTxs.getJSONObject(1).getString("txid"), txid);
   }
 
 
   @Test(enabled = true, description = "Shield urc20 burn without ask to one "
       + "public and one shield by http")
-  public void test02ShiledTrc20BurnWithoutAskToOnePublicAndOneShieldByHttp() {
-    noteTxs = scanShieldTrc20NoteByIvk(httpnode, shieldAccountInfo);
+  public void test02ShiledUrc20BurnWithoutAskToOnePublicAndOneShieldByHttp() {
+    noteTxs = scanShieldUrc20NoteByIvk(httpnode, shieldAccountInfo);
     JSONArray shieldSpends = new JSONArray();
     shieldSpends = createAndSetShieldedSpends(httpnode, shieldSpends, noteTxs.getJSONObject(1));
 
@@ -143,26 +143,26 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
         shieldReceiverAccountInfo.getString("payment_address"), getRcm(httpnode));
 
     response = createShieldContractParametersWithoutAskForBurn(httpnode, shieldAccountInfo,
-        shieldSpends, zenTrc20TokenOwnerAddressString, toPublicAmount, shieldedReceives);
-    JSONObject shieldedTrc20Parameters = HttpMethed.parseResponseContent(response);
-    HttpMethed.printJsonContent(shieldedTrc20Parameters);
+        shieldSpends, zenUrc20TokenOwnerAddressString, toPublicAmount, shieldedReceives);
+    JSONObject shieldedUrc20Parameters = HttpMethed.parseResponseContent(response);
+    HttpMethed.printJsonContent(shieldedUrc20Parameters);
     JSONObject spendAuthSig = createSpendAuthSig(httpnode, shieldAccountInfo,
-        shieldedTrc20Parameters.getString("message_hash"), noteTxs.getJSONObject(1)
+        shieldedUrc20Parameters.getString("message_hash"), noteTxs.getJSONObject(1)
             .getJSONObject("note").getString("rcm"));
     HttpMethed.printJsonContent(spendAuthSig);
     JSONArray spendAuthSigArray = new JSONArray();
     spendAuthSigArray.add(spendAuthSig);
 
-    response = getTriggerInputForShieldedTrc20BurnContract(httpnode,
-        shieldedTrc20Parameters, spendAuthSigArray, toPublicAmount,
-        zenTrc20TokenOwnerAddressString);
+    response = getTriggerInputForShieldedUrc20BurnContract(httpnode,
+        shieldedUrc20Parameters, spendAuthSigArray, toPublicAmount,
+        zenUrc20TokenOwnerAddressString);
     responseContent = HttpMethed.parseResponseContent(response);
     HttpMethed.printJsonContent(responseContent);
 
     txid = HttpMethed.triggerContractGetTxidWithVisibleTrue(httpnode,anotherHttpnode,
-        zenTrc20TokenOwnerAddressString, shieldAddress, burn, responseContent
+        zenUrc20TokenOwnerAddressString, shieldAddress, burn, responseContent
             .getString("value"), maxFeeLimit, 0L, 0, 0L,
-        zenTrc20TokenOwnerKey);
+        zenUrc20TokenOwnerKey);
 
     HttpMethed.waitToProduceOneBlock(httpnode);
     HttpMethed.waitToProduceOneBlock(httpnode);
@@ -175,7 +175,7 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
     Assert.assertEquals(responseContent.getString("contract_address"), shieldAddress);
     Assert.assertEquals(responseContent.getJSONObject("receipt").getString("result"), "SUCCESS");
 
-    noteTxs = scanShieldTrc20NoteByOvk(httpnode, shieldAccountInfo);
+    noteTxs = scanShieldUrc20NoteByOvk(httpnode, shieldAccountInfo);
     logger.info("noteTxs ovk:" + noteTxs);
 
     Assert.assertEquals(noteTxs.getJSONObject(2).getJSONObject("note")
@@ -185,7 +185,7 @@ public class HttpShieldUrc20Token005 extends ZenUrc20Base {
 
     Assert.assertEquals(noteTxs.getJSONObject(3).getLong("to_amount"), toPublicAmount);
     Assert.assertEquals(noteTxs.getJSONObject(3).getString("transparent_to_address"),
-        zenTrc20TokenOwnerAddressString);
+        zenUrc20TokenOwnerAddressString);
     Assert.assertEquals(noteTxs.getJSONObject(3).getString("txid"), txid);
 
   }

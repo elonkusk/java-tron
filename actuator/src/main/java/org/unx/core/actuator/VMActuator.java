@@ -67,7 +67,7 @@ public class VMActuator implements Actuator2 {
   private Transaction unx;
   private BlockCapsule blockCap;
 
-  /* tvm execution context */
+  /* uvm execution context */
   private Repository rootRepository;
   private Program program;
   private InternalTransaction rootInternalTx;

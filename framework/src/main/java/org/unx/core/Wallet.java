@@ -3118,7 +3118,7 @@ public class Wallet {
     byte[] shieldedURC20ContractAddress = request.getShieldedURC20ContractAddress().toByteArray();
     if (ArrayUtils.isEmpty(shieldedURC20ContractAddress)
         || shieldedURC20ContractAddress.length != 21) {
-      throw new ContractValidateException("No valid shielded TRC-20 contract address");
+      throw new ContractValidateException("No valid shielded URC-20 contract address");
     }
 
     byte[] shieldedURC20ContractAddressUvm = new byte[20];
@@ -3175,7 +3175,7 @@ public class Wallet {
       byte[] nsk = request.getNsk().toByteArray();
       byte[] ovk = request.getOvk().toByteArray();
       if ((ArrayUtils.isEmpty(ask) || ArrayUtils.isEmpty(nsk) || ArrayUtils.isEmpty(ovk))) {
-        throw new ContractValidateException("No shielded TRC-20 ask, nsk or ovk");
+        throw new ContractValidateException("No shielded URC-20 ask, nsk or ovk");
       }
 
       ExpandedSpendingKey expsk = new ExpandedSpendingKey(ask, nsk, ovk);
@@ -3194,12 +3194,12 @@ public class Wallet {
       byte[] nsk = request.getNsk().toByteArray();
       byte[] ovk = request.getOvk().toByteArray();
       if ((ArrayUtils.isEmpty(ask) || ArrayUtils.isEmpty(nsk) || ArrayUtils.isEmpty(ovk))) {
-        throw new ContractValidateException("No shielded TRC-20 ask, nsk or ovk");
+        throw new ContractValidateException("No shielded URC-20 ask, nsk or ovk");
       }
 
       byte[] transparentToAddress = request.getTransparentToAddress().toByteArray();
       if (ArrayUtils.isEmpty(transparentToAddress) || transparentToAddress.length != 21) {
-        throw new ContractValidateException("No valid transparent TRC-20 output address");
+        throw new ContractValidateException("No valid transparent URC-20 output address");
       }
 
       byte[] transparentToAddressUvm = new byte[20];
@@ -3218,7 +3218,7 @@ public class Wallet {
         buildShieldedURC20Output(builder, shieldedReceives.get(0), ovk);
       }
     } else {
-      throw new ContractValidateException("invalid shielded TRC-20 parameters");
+      throw new ContractValidateException("invalid shielded URC-20 parameters");
     }
 
     return builder.build(true);
@@ -3253,7 +3253,7 @@ public class Wallet {
     byte[] shieldedURC20ContractAddress = request.getShieldedURC20ContractAddress().toByteArray();
     if (ArrayUtils.isEmpty(shieldedURC20ContractAddress)
         || shieldedURC20ContractAddress.length != 21) {
-      throw new ContractValidateException("No valid shielded TRC-20 contract address");
+      throw new ContractValidateException("No valid shielded URC-20 contract address");
     }
     byte[] shieldedURC20ContractAddressUvm = new byte[20];
     System.arraycopy(shieldedURC20ContractAddress, 1, shieldedURC20ContractAddressUvm, 0, 20);
@@ -3305,7 +3305,7 @@ public class Wallet {
       byte[] nsk = request.getNsk().toByteArray();
       byte[] ovk = request.getOvk().toByteArray();
       if ((ArrayUtils.isEmpty(ak) || ArrayUtils.isEmpty(nsk) || ArrayUtils.isEmpty(ovk))) {
-        throw new ContractValidateException("No shielded TRC-20 ak, nsk or ovk");
+        throw new ContractValidateException("No shielded URC-20 ak, nsk or ovk");
       }
       for (GrpcAPI.SpendNoteURC20 spendNote : shieldedSpends) {
         buildShieldedURC20InputWithAK(builder, spendNote, ak, nsk);
@@ -3320,11 +3320,11 @@ public class Wallet {
       byte[] nsk = request.getNsk().toByteArray();
       byte[] ovk = request.getOvk().toByteArray();
       if ((ArrayUtils.isEmpty(ak) || ArrayUtils.isEmpty(nsk) || ArrayUtils.isEmpty(ovk))) {
-        throw new ContractValidateException("No shielded TRC-20 ak, nsk or ovk");
+        throw new ContractValidateException("No shielded URC-20 ak, nsk or ovk");
       }
       byte[] transparentToAddress = request.getTransparentToAddress().toByteArray();
       if (ArrayUtils.isEmpty(transparentToAddress) || transparentToAddress.length != 21) {
-        throw new ContractValidateException("No transparent TRC-20 output address");
+        throw new ContractValidateException("No transparent URC-20 output address");
       }
       byte[] transparentToAddressUvm = new byte[20];
       System.arraycopy(transparentToAddress, 1, transparentToAddressUvm, 0, 20);
@@ -3339,7 +3339,7 @@ public class Wallet {
         buildShieldedURC20Output(builder, shieldedReceives.get(0), ovk);
       }
     } else {
-      throw new ContractValidateException("invalid shielded TRC-20 parameters");
+      throw new ContractValidateException("invalid shielded URC-20 parameters");
     }
     return builder.build(false);
   }
@@ -3833,7 +3833,7 @@ public class Wallet {
         parametersBuilder.setBurnCiphertext(burnCiper);
       } else {
         throw new ZksnarkException(
-            "invalid shielded TRC-20 contract parameters for burn trigger input");
+            "invalid shielded URC-20 contract parameters for burn trigger input");
       }
     }
     String input = parametersBuilder

@@ -6,18 +6,18 @@ contract Dest {
 
  constructor() payable public {}
 
- function getToken(trcToken tokenId) payable public{
+ function getToken(urcToken tokenId) payable public{
         emit logGetToken(msg.sender.tokenBalance(tokenId), msg.tokenid, msg.tokenvalue, msg.value);
  }
 
  function getTokenLongMin() payable public{
         // long.min - 1000020
- emit logGetToken(msg.sender.tokenBalance(trcToken(uint256(int256(-9223372036855775828)))), msg.tokenid, msg.tokenvalue, msg.value);
+ emit logGetToken(msg.sender.tokenBalance(urcToken(uint256(int256(-9223372036855775828)))), msg.tokenid, msg.tokenvalue, msg.value);
  }
 
  function getTokenLongMax() payable public{
         // long.max + 1000020
- emit logGetToken(msg.sender.tokenBalance(trcToken(9223372036855775827)), msg.tokenid, msg.tokenvalue, msg.value);
+ emit logGetToken(msg.sender.tokenBalance(urcToken(9223372036855775827)), msg.tokenid, msg.tokenvalue, msg.value);
  }
 
  fallback() payable external{

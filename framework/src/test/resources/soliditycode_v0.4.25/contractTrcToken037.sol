@@ -9,14 +9,14 @@ contract transferUrc10 {
         rec.transferToken(aamount,msg.tokenid);
         require(0==address(this).tokenBalance(msg.tokenid));
         require(bamount+aamount==rec.tokenBalance(msg.tokenid));
-        require(rec.call(bytes4(keccak256("checkUrc10(uint256,trcToken,uint256)")),bamount+aamount,msg.tokenid,0));
+        require(rec.call(bytes4(keccak256("checkUrc10(uint256,urcToken,uint256)")),bamount+aamount,msg.tokenid,0));
     }
 }
 
 contract receiveUrc10 {
     function() public payable {
     }
-    function checkUrc10(uint256 amount,trcToken tid,uint256 meamount) public{
+    function checkUrc10(uint256 amount,urcToken tid,uint256 meamount) public{
         require(amount==address(this).tokenBalance(tid));
         require(meamount==msg.sender.tokenBalance(tid));
     }

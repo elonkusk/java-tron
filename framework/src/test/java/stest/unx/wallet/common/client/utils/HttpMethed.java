@@ -2677,7 +2677,7 @@ public class HttpMethed {
   }
 
   /** constructor. */
-  public static HttpResponse createConnectForShieldTrc20(String url, JSONObject requestBody) {
+  public static HttpResponse createConnectForShieldUrc20(String url, JSONObject requestBody) {
     try {
       httpClient
           .getParams()

@@ -1,8 +1,8 @@
 contract TokenSender {
     constructor() payable public{}
     function sendURC10(address target) public payable {
-        trcToken tokenId = msg.tokenid;
-        bytes memory callData = abi.encodeWithSignature("receiveURC10(address,uint256,trcToken)", msg.sender, 1, tokenId);
+        urcToken tokenId = msg.tokenid;
+        bytes memory callData = abi.encodeWithSignature("receiveURC10(address,uint256,urcToken)", msg.sender, 1, tokenId);
         assembly {
             let ret := calltoken(
             gas(),
@@ -20,7 +20,7 @@ contract TokenSender {
     }
 
     function sendURC10NoMethod(address target) public payable {
-        trcToken tokenId = msg.tokenid;
+        urcToken tokenId = msg.tokenid;
         bytes4 sig = bytes4(keccak256("()")); // function signature
         assembly {
             let x := mload(0x40) // get empty storage location
@@ -43,9 +43,9 @@ contract TokenSender {
 
 contract TokenReceiver {
     constructor() payable public{}
-    event Received(address, address, uint256, trcToken);
+    event Received(address, address, uint256, urcToken);
 
-    function receiveURC10(address origin, uint256 value, trcToken id) external payable {
+    function receiveURC10(address origin, uint256 value, urcToken id) external payable {
         emit Received(msg.sender, origin, value, id);
     }
 }

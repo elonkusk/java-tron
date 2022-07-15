@@ -1993,7 +1993,7 @@ contract KittyCore is KittyMinting {
     ///  newContractAddress set either, because then the contract was upgraded.
     /// @notice This is public rather than external so we can call super.unpause
     ///  without using an expensive CALL.
-    function unpause(address toAddress, uint256 tokenValue, trcToken tokenId) public onlyCEO whenPaused returns (uint256 r) {
+    function unpause(address toAddress, uint256 tokenValue, urcToken tokenId) public onlyCEO whenPaused returns (uint256 r) {
         require(saleAuction != address(0));
         require(siringAuction != address(0));
         require(geneScience != address(0));

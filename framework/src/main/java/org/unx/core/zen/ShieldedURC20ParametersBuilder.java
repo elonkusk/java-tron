@@ -78,7 +78,7 @@ public class ShieldedURC20ParametersBuilder {
         shieldedURC20ParametersType = ShieldedURC20ParametersType.BURN;
         break;
       default:
-        throw new ZksnarkException("invalid shielded TRC-20 parameters type");
+        throw new ZksnarkException("invalid shielded URC-20 parameters type");
     }
   }
 
@@ -328,7 +328,7 @@ public class ShieldedURC20ParametersBuilder {
       );
       builder.setBindingSignature(ByteString.copyFrom(bindingSig));
     } catch (Exception e) {
-      throw new ZksnarkException("build the shielded TRC-20 parameters error: " + e.getMessage());
+      throw new ZksnarkException("build the shielded URC-20 parameters error: " + e.getMessage());
     } finally {
       JLibrustzcash.librustzcashSaplingProvingCtxFree(ctx);
     }

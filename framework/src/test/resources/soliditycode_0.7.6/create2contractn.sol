@@ -20,7 +20,7 @@ contract TestConstract {
     function testTransfer(uint256 i) payable public{
           msg.sender.transfer(i);
     }
-    function testTransferToken(uint256 i,trcToken tokenId) payable public{
+    function testTransferToken(uint256 i,urcToken tokenId) payable public{
           msg.sender.transferToken(i, tokenId);
     }
     function testSuicideNonexistentTarget(address payable nonexistentTarget) payable public {

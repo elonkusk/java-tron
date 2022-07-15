@@ -599,7 +599,7 @@ public class Accounts002 extends JsonRpcBase {
     JSONArray logs = resultFromTransactionReceipt.getJSONArray("logs");
     logger.info("logs:" + logs);
     logger.info("result:" + resultFromTransactionReceipt.toString());
-    response = HttpMethed.getBlockByNumFromSolidity(httpsolidityNode, blockNumForTrc20);
+    response = HttpMethed.getBlockByNumFromSolidity(httpsolidityNode, blockNumForUrc20);
     responseContent = HttpMethed.parseResponseContent(response);
     int index = 0;
     for (int i = 0; i < responseContent.getJSONArray("transactions").size(); i++) {
@@ -611,7 +611,7 @@ public class Accounts002 extends JsonRpcBase {
     }
 
     JsonArray paramsForTransactionByBlockNumberAndIndex = new JsonArray();
-    paramsForTransactionByBlockNumberAndIndex.add("0x" + Integer.toHexString(blockNumForTrc20));
+    paramsForTransactionByBlockNumberAndIndex.add("0x" + Integer.toHexString(blockNumForUrc20));
     paramsForTransactionByBlockNumberAndIndex.add("0x" + Integer.toHexString(index));
     JsonObject requestBody1 =
         getJsonRpcBody(
@@ -686,11 +686,11 @@ public class Accounts002 extends JsonRpcBase {
     Assert.assertEquals(
         logs.getJSONObject(0).getString("address"), resultFromTransactionReceipt.getString("to"));
     response =
-        HttpMethed.getTransactionInfoByBlocknumFromSolidity(httpsolidityNode, blockNumForTrc20);
+        HttpMethed.getTransactionInfoByBlocknumFromSolidity(httpsolidityNode, blockNumForUrc20);
     List<JSONObject> responseContent1 = HttpMethed.parseResponseContentArray(response);
     logger.info("responseContent1:" + responseContent1);
 
-    response = HttpMethed.getBlockByNumFromSolidity(httpsolidityNode, blockNumForTrc20);
+    response = HttpMethed.getBlockByNumFromSolidity(httpsolidityNode, blockNumForUrc20);
     responseContent = HttpMethed.parseResponseContent(response);
     Assert.assertEquals(
         logs.getJSONObject(0).getString("data").substring(2),

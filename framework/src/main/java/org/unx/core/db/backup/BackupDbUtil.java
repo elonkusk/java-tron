@@ -11,10 +11,10 @@ import org.unx.common.utils.PropUtil;
 import org.unx.core.capsule.BlockCapsule;
 import org.unx.core.config.args.Args;
 import org.unx.core.db.RevokingDatabase;
+import org.unx.core.db2.common.RocksDB;
 import org.unx.core.db2.core.Chainbase;
 import org.unx.core.db2.core.SnapshotManager;
 import org.unx.core.db2.core.SnapshotRoot;
-import org.unx.core.db2.common.RocksDB;
 
 @Slf4j
 @Component

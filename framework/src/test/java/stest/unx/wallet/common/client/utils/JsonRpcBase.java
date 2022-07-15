@@ -71,12 +71,12 @@ public class JsonRpcBase {
   public static String urc20AddressByteString;
   public static String urc20AddressHex;
   public static String contractAddressFrom58;
-  public static String contractTrc20AddressFrom58;
+  public static String contractUrc20AddressFrom58;
   public static String contractAddressFromHex;
   public static ByteString shieldAddressByteString;
   public static byte[] shieldAddressByte;
   public static String shieldAddress;
-  public static String deployTrc20Txid;
+  public static String deployUrc20Txid;
   public static String deployShieldTxid;
   public static String mint = "mint(uint256,bytes32[9],bytes32[2],bytes32[21])";
   public static String transfer =
@@ -93,7 +93,7 @@ public class JsonRpcBase {
   public static String name = "jsonrpc-test";
   public static String jsonRpcAssetId;
   public static Integer blockNum;
-  public static Integer blockNumForTrc20;
+  public static Integer blockNumForUrc20;
   public static String blockNumHex;
   public static String blockId;
   public static String txid;
@@ -151,7 +151,7 @@ public class JsonRpcBase {
 
     deployContract();
     triggerContract();
-    deployTrc20Contract();
+    deployUrc20Contract();
   }
 
   /** constructor. */
@@ -164,7 +164,7 @@ public class JsonRpcBase {
     param.addProperty("from", ByteArray.toHexString(jsonRpcOwnerAddress));
     param.addProperty("name", "transferTokenContract");
     param.addProperty("gas", "0x245498");
-    String filePath = "./src/test/resources/soliditycode/contractTrcToken001.sol";
+    String filePath = "./src/test/resources/soliditycode/contractUrcToken001.sol";
     String contractName = "tokenTest";
     HashMap retMap = PublicMethed.getBycodeAbi(filePath, contractName);
 
@@ -231,7 +231,7 @@ public class JsonRpcBase {
     paramString = addressParam + tokenIdParam + tokenValueParam;
     logger.info("paramString:" + paramString);
 
-    String selector = "TransferTokenTo(address,trcToken,uint256)";
+    String selector = "TransferTokenTo(address,urcToken,uint256)";
     // exit(1);
     param.addProperty("data", "0x" + Util.parseMethod(selector, paramString));
     data = "0x" + Util.parseMethod(selector, paramString);
@@ -278,15 +278,15 @@ public class JsonRpcBase {
   }
 
   /** constructor. */
-  public void deployTrc20Contract() throws InterruptedException {
-    String contractName = "shieldTrc20Token";
+  public void deployUrc20Contract() throws InterruptedException {
+    String contractName = "shieldUrc20Token";
 
-    String abi = Configuration.getByPath("testng.conf").getString("abi.abi_shieldTrc20Token");
-    String code = Configuration.getByPath("testng.conf").getString("code.code_shieldTrc20Token");
+    String abi = Configuration.getByPath("testng.conf").getString("abi.abi_shieldUrc20Token");
+    String code = Configuration.getByPath("testng.conf").getString("code.code_shieldUrc20Token");
     String constructorStr = "constructor(uint256,string,string)";
     String data = totalSupply.toString() + "," + "\"TokenURC20\"" + "," + "\"zen20\"";
     logger.info("data:" + data);
-    deployTrc20Txid =
+    deployUrc20Txid =
         PublicMethed.deployContractWithConstantParame(
             contractName,
             abi,
@@ -303,18 +303,18 @@ public class JsonRpcBase {
             blockingStubFull);
 
     PublicMethed.waitProduceNextBlock(blockingStubFull);
-    logger.info("deployTrc20Txid：" + deployTrc20Txid);
-    response = HttpMethed.getTransactionById(httpFullNode, deployTrc20Txid);
+    logger.info("deployUrc20Txid：" + deployUrc20Txid);
+    response = HttpMethed.getTransactionById(httpFullNode, deployUrc20Txid);
     responseContent = HttpMethed.parseResponseContent(response);
     HttpMethed.printJsonContent(responseContent);
     org.junit.Assert.assertTrue(!responseContent.getString("contract_address").isEmpty());
-    contractTrc20AddressFrom58 = responseContent.getString("contract_address");
-    logger.info("contractTrc20AddressFrom58:" + contractTrc20AddressFrom58);
+    contractUrc20AddressFrom58 = responseContent.getString("contract_address");
+    logger.info("contractUrc20AddressFrom58:" + contractUrc20AddressFrom58);
 
     //   NewFilterId = createNewFilterId();
 
     Optional<TransactionInfo> infoById =
-        PublicMethed.getTransactionInfoById(deployTrc20Txid, blockingStubFull);
+        PublicMethed.getTransactionInfoById(deployUrc20Txid, blockingStubFull);
 
     urc20AddressHex = ByteArray.toHexString(infoById.get().getContractAddress().toByteArray());
     byte[] urc20Address = infoById.get().getContractAddress().toByteArray();
@@ -339,7 +339,7 @@ public class JsonRpcBase {
             jsonRpcOwnerKey,
             blockingStubFull);
     PublicMethed.waitProduceNextBlock(blockingStubFull);
-    blockNumForTrc20 =
+    blockNumForUrc20 =
         (int)
             (PublicMethed.getTransactionInfoById(urc20Txid, blockingStubFull)
                 .get()

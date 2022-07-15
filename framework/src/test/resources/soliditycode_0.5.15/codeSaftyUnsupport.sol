@@ -16,9 +16,9 @@ r = address(this).balance;
 contract UseDot {
 constructor() payable public{}
 function() payable external{}
-mapping(address => mapping(trcToken => uint256)) sender_tokens;
+mapping(address => mapping(urcToken => uint256)) sender_tokens;
 
-function trigger1(address payable addr, trcToken tokenInputId) payable public {
+function trigger1(address payable addr, urcToken tokenInputId) payable public {
  //address(SubC(addr)).call.value(1000).tokenId(tokenInputId)(abi.encodeWithSignature("receiveToken()")); // ERROR
 }
 
@@ -38,8 +38,8 @@ function trigger5(address payable addr) payable public {
   SubC(addr).receiveToken.value(10)();
 }
 
-function trigger6(address payable addr, trcToken tokenId) payable public {
-address(SubC(addr)).call.value(1000)(abi.encodeWithSignature("transferToken(uint256, trcToken)", 10, tokenId));
+function trigger6(address payable addr, urcToken tokenId) payable public {
+address(SubC(addr)).call.value(1000)(abi.encodeWithSignature("transferToken(uint256, urcToken)", 10, tokenId));
 }
 
 function trigger7(address addr) payable public {

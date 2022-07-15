@@ -9,16 +9,16 @@ contract A {
         return assetissue(name, abbr, totalSupply, precision);
     }
 
-    function updateAssetA(trcToken tokenId, string memory url, string memory desc) public returns (bool) {
+    function updateAssetA(urcToken tokenId, string memory url, string memory desc) public returns (bool) {
         return updateasset(tokenId, bytes(url), bytes(desc));
     }
 
-    function transferToken(address payable toAddress, uint256 tokenValue, trcToken id) payable public {
+    function transferToken(address payable toAddress, uint256 tokenValue, urcToken id) payable public {
         toAddress.transferToken(tokenValue, id);
     }
 }
 
-contract tvmAssetIssue004 {
+contract uvmAssetIssue004 {
 
     A a;
 
@@ -28,7 +28,7 @@ contract tvmAssetIssue004 {
         return a.tokenIssueA(name, abbr, totalSupply, precision);
     }
 
-    function updateAsset(trcToken tokenId, string memory url, string memory desc) public returns (bool) {
+    function updateAsset(urcToken tokenId, string memory url, string memory desc) public returns (bool) {
         return a.updateAssetA(tokenId, url, desc);
     }
 

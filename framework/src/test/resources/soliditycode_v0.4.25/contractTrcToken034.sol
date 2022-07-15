@@ -4,13 +4,13 @@ pragma solidity ^0.4.24;
 
      // 2. 异常测试
      // 1）revert, 金额回退
-     function failTransferTokenRevert(address toAddress,uint256 amount, trcToken id) public payable{
+     function failTransferTokenRevert(address toAddress,uint256 amount, urcToken id) public payable{
          toAddress.transferToken(amount,id);
          require(1==2);
      }
 
      // 2）Error, 金额回退， fee limit 扣光
-     function failTransferTokenError(address toAddress,uint256 amount, trcToken id) public payable{
+     function failTransferTokenError(address toAddress,uint256 amount, urcToken id) public payable{
          toAddress.transferToken(amount,id);
          assert(1==2);
      }

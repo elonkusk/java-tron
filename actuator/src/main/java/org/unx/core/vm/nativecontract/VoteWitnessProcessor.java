@@ -62,7 +62,7 @@ public class VoteWitnessProcessor {
 
         byte[] witnessAddress = vote.getVoteAddress().toByteArray();
         /*
-          Already covered while doing maintenance in MaintenanceManager.java, for tvm performance,
+          Already covered while doing maintenance in MaintenanceManager.java, for uvm performance,
           we remove the account check
          */
 //        if (repo.getAccount(witnessAddress) == null) {

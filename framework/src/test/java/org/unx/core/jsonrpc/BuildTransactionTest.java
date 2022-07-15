@@ -126,15 +126,15 @@ public class BuildTransactionTest {
     buildArguments.setGas("0x245498");
     buildArguments.setAbi(
         "[{\"constant\":false,\"inputs\":[],\"name\":\"getResultInCon\",\"outputs\":"
-            + "[{\"name\":\"\",\"type\":\"trcToken\"},{\"name\":\"\",\"type\":\"uint256\"},"
+            + "[{\"name\":\"\",\"type\":\"urcToken\"},{\"name\":\"\",\"type\":\"uint256\"},"
             + "{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":true,"
             + "\"stateMutability\":\"payable\",\"type\":\"function\"},"
             + "{\"constant\":false,\"inputs\":[{\"name\":\"toAddress\",\"type\":\"address\"},"
-            + "{\"name\":\"id\",\"type\":\"trcToken\"},{\"name\":\"amount\",\"type\":\"uint256\"}],"
+            + "{\"name\":\"id\",\"type\":\"urcToken\"},{\"name\":\"amount\",\"type\":\"uint256\"}],"
             + "\"name\":\"TransferTokenTo\",\"outputs\":[],\"payable\":true,"
             + "\"stateMutability\":\"payable\",\"type\":\"function\"},"
             + "{\"constant\":false,\"inputs\":[],\"name\":\"msgTokenValueAndTokenIdTest\","
-            + "\"outputs\":[{\"name\":\"\",\"type\":\"trcToken\"},"
+            + "\"outputs\":[{\"name\":\"\",\"type\":\"urcToken\"},"
             + "{\"name\":\"\",\"type\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\"}],"
             + "\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},"
             + "{\"inputs\":[],\"payable\":true,\"stateMutability\":\"payable\","
