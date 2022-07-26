@@ -7,8 +7,7 @@ import org.tron.core.exception.ContractValidateException;
 
 public interface Runtime {
 
-  void execute(TransactionContext context)
-      throws ContractValidateException, ContractExeException;
+  void execute(TransactionContext context) throws ContractValidateException, ContractExeException;
 
   ProgramResult getResult();
 

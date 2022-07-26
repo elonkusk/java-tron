@@ -254,17 +254,14 @@ public class JsonRpcExt {
         }
     }
 
-    public TronJsonRpc.LogFilterElement[] getLogsByLogFilterWrapper(LogFilterWrapper logFilterWrapper,
-                                                                    long currentMaxBlockNum) throws JsonRpcTooManyResultException, ExecutionException,
-            InterruptedException, BadItemException, ItemNotFoundException {
+    public TronJsonRpc.LogFilterElement[] getLogsByLogFilterWrapper(LogFilterWrapper logFilterWrapper, long currentMaxBlockNum)
+            throws JsonRpcTooManyResultException, ExecutionException, InterruptedException, BadItemException, ItemNotFoundException {
         //query possible block
-        LogBlockQuery logBlockQuery = new LogBlockQuery(logFilterWrapper, manager.getChainBaseManager()
-                .getSectionBloomStore(), currentMaxBlockNum, sectionExecutor);
+        LogBlockQuery logBlockQuery = new LogBlockQuery(logFilterWrapper, manager.getChainBaseManager().getSectionBloomStore(), currentMaxBlockNum, sectionExecutor);
         List<Long> possibleBlockList = logBlockQuery.getPossibleBlock();
 
         //match event from block one by one exactly
-        LogMatch logMatch =
-                new LogMatch(logFilterWrapper, possibleBlockList, manager);
+        LogMatch logMatch = new LogMatch(logFilterWrapper, possibleBlockList, manager);
         return logMatch.matchBlockOneByOne();
     }
 

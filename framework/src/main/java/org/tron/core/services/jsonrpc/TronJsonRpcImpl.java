@@ -233,8 +233,7 @@ public class TronJsonRpcImpl extends JsonRpcExt implements TronJsonRpc {
     public String getStorageAt(String address, String storageIdx, String blockNumOrTag) throws JsonRpcInvalidParamsException {
         logger.info("[sniper] getStorageAt...");
 
-        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag) || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
             throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
         } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
             byte[] addressByte = addressCompatibleToByteArray(address);
@@ -446,8 +445,7 @@ public class TronJsonRpcImpl extends JsonRpcExt implements TronJsonRpc {
     public String getCall(CallArguments transactionCall, String blockNumOrTag) throws JsonRpcInvalidParamsException {
         logger.info("[sniper] getCall ===> {}-{}", transactionCall, blockNumOrTag);
 
-        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag)
-                || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
+        if (EARLIEST_STR.equalsIgnoreCase(blockNumOrTag) || PENDING_STR.equalsIgnoreCase(blockNumOrTag)) {
             throw new JsonRpcInvalidParamsException(TAG_NOT_SUPPORT_ERROR);
         } else if (LATEST_STR.equalsIgnoreCase(blockNumOrTag)) {
             byte[] addressData = addressCompatibleToByteArray(transactionCall.getFrom());
@@ -764,8 +762,7 @@ public class TronJsonRpcImpl extends JsonRpcExt implements TronJsonRpc {
     }
 
     @Override
-    public Object[] getFilterChanges(String filterId) throws ItemNotFoundException,
-            JsonRpcMethodNotFoundException {
+    public Object[] getFilterChanges(String filterId) throws ItemNotFoundException, JsonRpcMethodNotFoundException {
         disableInPBFT("eth_getFilterChanges");
 
         Map<String, BlockFilterAndResult> blockFilter2Result;

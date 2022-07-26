@@ -14,13 +14,11 @@ public class Operation {
   private final Consumer<Program> action;
   private final BooleanSupplier enabled;
 
-  public Operation(int opcode, int require, int ret,
-                      Function<Program, Long> cost, Consumer<Program> action) {
+  public Operation(int opcode, int require, int ret, Function<Program, Long> cost, Consumer<Program> action) {
     this(opcode, require, ret, cost, action, () -> true);
   }
 
-  public Operation(int opcode, int require, int ret,
-      Function<Program, Long> cost, Consumer<Program> action, BooleanSupplier enabled) {
+  public Operation(int opcode, int require, int ret, Function<Program, Long> cost, Consumer<Program> action, BooleanSupplier enabled) {
     this.opcode = opcode;
     this.require = require;
     this.ret = ret;

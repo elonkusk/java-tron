@@ -53,8 +53,7 @@ public class ContractEventTriggerCapsule extends TriggerCapsule {
   @Override
   public void processTrigger() {
     contractEventTrigger.setTopicMap(ContractEventParserAbi.parseTopics(topicList, abiEntry));
-    contractEventTrigger
-        .setDataMap(ContractEventParserAbi.parseEventData(data, topicList, abiEntry));
+    contractEventTrigger.setDataMap(ContractEventParserAbi.parseEventData(data, topicList, abiEntry));
 
     if (matchFilter(contractEventTrigger)) {
       EventPluginLoader.getInstance().postContractEventTrigger(contractEventTrigger);

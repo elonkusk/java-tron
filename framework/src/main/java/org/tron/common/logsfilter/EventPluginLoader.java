@@ -4,10 +4,7 @@ import com.beust.jcommander.internal.Sets;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
@@ -16,6 +13,8 @@ import org.pf4j.DefaultPluginManager;
 import org.pf4j.ManifestPluginDescriptorFinder;
 import org.pf4j.PluginManager;
 import org.springframework.util.StringUtils;
+import org.tron.common.logsfilter.listener.IPluginEventListener;
+import org.tron.common.logsfilter.listener.PluginEventListenerImpl;
 import org.tron.common.logsfilter.nativequeue.NativeMessageQueue;
 import org.tron.common.logsfilter.trigger.BlockLogTrigger;
 import org.tron.common.logsfilter.trigger.ContractEventTrigger;
@@ -93,10 +92,8 @@ public class EventPluginLoader {
     long toBlockNumber = filterQuery.getToBlock();
 
     boolean matched = false;
-    if (fromBlockNumber == FilterQuery.LATEST_BLOCK_NUM
-        || toBlockNumber == FilterQuery.EARLIEST_BLOCK_NUM) {
-      logger.error("invalid filter: fromBlockNumber: {}, toBlockNumber: {}",
-          fromBlockNumber, toBlockNumber);
+    if (fromBlockNumber == FilterQuery.LATEST_BLOCK_NUM || toBlockNumber == FilterQuery.EARLIEST_BLOCK_NUM) {
+      logger.error("invalid filter: fromBlockNumber: {}, toBlockNumber: {}", fromBlockNumber, toBlockNumber);
       return false;
     }
 
@@ -129,10 +126,8 @@ public class EventPluginLoader {
   }
 
   private static boolean filterContractAddress(ContractTrigger trigger, List<String> addressList) {
-    addressList = addressList.stream().filter(item ->
-        org.apache.commons.lang3.StringUtils.isNotEmpty(item))
-        .collect(Collectors.toList());
-    if (Objects.isNull(addressList) || addressList.isEmpty()) {
+    addressList = addressList.stream().filter(org.apache.commons.lang3.StringUtils::isNotEmpty).collect(Collectors.toList());
+    if (addressList.isEmpty()) {
       return true;
     }
 
@@ -150,9 +145,8 @@ public class EventPluginLoader {
   }
 
   private static boolean filterContractTopicList(ContractTrigger trigger, List<String> topList) {
-    topList = topList.stream().filter(item -> org.apache.commons.lang3.StringUtils.isNotEmpty(item))
-        .collect(Collectors.toList());
-    if (Objects.isNull(topList) || topList.isEmpty()) {
+    topList = topList.stream().filter(org.apache.commons.lang3.StringUtils::isNotEmpty).collect(Collectors.toList());
+    if (topList.isEmpty()) {
       return true;
     }
 
@@ -186,9 +180,7 @@ public class EventPluginLoader {
       return false;
     }
 
-    triggerConfigList.forEach(triggerConfig -> {
-      setSingleTriggerConfig(triggerConfig);
-    });
+    triggerConfigList.forEach(this::setSingleTriggerConfig);
 
     return true;
   }
@@ -207,7 +199,7 @@ public class EventPluginLoader {
     setPluginConfig();
 
     if (Objects.nonNull(eventListeners)) {
-      eventListeners.forEach(listener -> listener.start());
+      eventListeners.forEach(IPluginEventListener::start);
     }
 
     return true;
@@ -242,9 +234,7 @@ public class EventPluginLoader {
     // set db config to plugin
     eventListeners.forEach(listener -> listener.setDBConfig(this.dbConfig));
 
-    triggerConfigList.forEach(triggerConfig -> {
-      setSingleTriggerConfig(triggerConfig);
-    });
+    triggerConfigList.forEach(this::setSingleTriggerConfig);
   }
 
   private void setSingleTriggerConfig(TriggerConfig triggerConfig) {
@@ -350,11 +340,9 @@ public class EventPluginLoader {
 
   public void postSolidityTrigger(SolidityTrigger trigger) {
     if (useNativeQueue) {
-      NativeMessageQueue.getInstance()
-          .publishTrigger(toJsonString(trigger), trigger.getTriggerName());
+      NativeMessageQueue.getInstance().publishTrigger(toJsonString(trigger), trigger.getTriggerName());
     } else {
-      eventListeners.forEach(listener ->
-          listener.handleSolidityTrigger(toJsonString(trigger)));
+      eventListeners.forEach(listener -> listener.handleSolidityTrigger(toJsonString(trigger)));
     }
   }
 
@@ -425,8 +413,7 @@ public class EventPluginLoader {
       pluginManager = new DefaultPluginManager(pluginPath.toPath()) {
         @Override
         protected CompoundPluginDescriptorFinder createPluginDescriptorFinder() {
-          return new CompoundPluginDescriptorFinder()
-              .add(new ManifestPluginDescriptorFinder());
+          return new CompoundPluginDescriptorFinder().add(new ManifestPluginDescriptorFinder());
         }
       };
     }
@@ -443,9 +430,9 @@ public class EventPluginLoader {
 
     if (Objects.isNull(eventListeners) || eventListeners.isEmpty()) {
       logger.error("No eventListener is registered");
-      return false;
+      eventListeners = new ArrayList<>();
     }
-
+    eventListeners.add(new PluginEventListenerImpl());//@TODO
     logger.info("'{}' loaded", path);
 
     return true;
@@ -463,21 +450,17 @@ public class EventPluginLoader {
 
   public void postBlockTrigger(BlockLogTrigger trigger) {
     if (useNativeQueue) {
-      NativeMessageQueue.getInstance()
-          .publishTrigger(toJsonString(trigger), trigger.getTriggerName());
+      NativeMessageQueue.getInstance().publishTrigger(toJsonString(trigger), trigger.getTriggerName());
     } else {
-      eventListeners.forEach(listener ->
-          listener.handleBlockEvent(toJsonString(trigger)));
+      eventListeners.forEach(listener -> listener.handleBlockEvent(toJsonString(trigger)));
     }
   }
 
   public void postSolidityLogTrigger(ContractLogTrigger trigger) {
     if (useNativeQueue) {
-      NativeMessageQueue.getInstance()
-          .publishTrigger(toJsonString(trigger), trigger.getTriggerName());
+      NativeMessageQueue.getInstance().publishTrigger(toJsonString(trigger), trigger.getTriggerName());
     } else {
-      eventListeners.forEach(listener ->
-          listener.handleSolidityLogTrigger(toJsonString(trigger)));
+      eventListeners.forEach(listener -> listener.handleSolidityLogTrigger(toJsonString(trigger)));
     }
   }
 
@@ -502,21 +485,17 @@ public class EventPluginLoader {
 
   public void postContractLogTrigger(ContractLogTrigger trigger) {
     if (useNativeQueue) {
-      NativeMessageQueue.getInstance()
-          .publishTrigger(toJsonString(trigger), trigger.getTriggerName());
+      NativeMessageQueue.getInstance().publishTrigger(toJsonString(trigger), trigger.getTriggerName());
     } else {
-      eventListeners.forEach(listener ->
-          listener.handleContractLogTrigger(toJsonString(trigger)));
+      eventListeners.forEach(listener -> listener.handleContractLogTrigger(toJsonString(trigger)));
     }
   }
 
   public void postContractEventTrigger(ContractEventTrigger trigger) {
     if (useNativeQueue) {
-      NativeMessageQueue.getInstance()
-          .publishTrigger(toJsonString(trigger), trigger.getTriggerName());
+      NativeMessageQueue.getInstance().publishTrigger(toJsonString(trigger), trigger.getTriggerName());
     } else {
-      eventListeners.forEach(listener ->
-          listener.handleContractEventTrigger(toJsonString(trigger)));
+      eventListeners.forEach(listener -> listener.handleContractEventTrigger(toJsonString(trigger)));
     }
   }
 

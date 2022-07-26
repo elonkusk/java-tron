@@ -66,22 +66,18 @@ public class TransactionUtil {
         Contract.ContractType.TransferContract).getInstance();
   }
 
-  public static TransactionInfoCapsule buildTransactionInfoInstance(TransactionCapsule trxCap,
-      BlockCapsule block, TransactionTrace trace) {
+  public static TransactionInfoCapsule buildTransactionInfoInstance(TransactionCapsule trxCap, BlockCapsule block, TransactionTrace trace) {
 
     TransactionInfo.Builder builder = TransactionInfo.newBuilder();
     ReceiptCapsule traceReceipt = trace.getReceipt();
     builder.setResult(code.SUCESS);
-    if (StringUtils.isNoneEmpty(trace.getRuntimeError()) || Objects
-        .nonNull(trace.getRuntimeResult().getException())) {
+    if (StringUtils.isNoneEmpty(trace.getRuntimeError()) || Objects.nonNull(trace.getRuntimeResult().getException())) {
       builder.setResult(code.FAILED);
       builder.setResMessage(ByteString.copyFromUtf8(trace.getRuntimeError()));
     }
     builder.setId(ByteString.copyFrom(trxCap.getTransactionId().getBytes()));
     ProgramResult programResult = trace.getRuntimeResult();
-    long fee =
-        programResult.getRet().getFee() + traceReceipt.getEnergyFee()
-            + traceReceipt.getNetFee() + traceReceipt.getMultiSignFee();
+    long fee = programResult.getRet().getFee() + traceReceipt.getEnergyFee() + traceReceipt.getNetFee() + traceReceipt.getMultiSignFee();
 
     boolean supportTransactionFeePool = trace.getTransactionContext().getStoreFactory()
         .getChainBaseManager().getDynamicPropertiesStore().supportTransactionFeePool();

@@ -32,13 +32,13 @@ import org.tron.protos.Protocol.TransactionInfo.Log;
  */
 public class LogInfo {
 
-  private byte[] address = new byte[]{};
-  private List<DataWord> topics = new ArrayList<>();
-  private byte[] data = new byte[]{};
+  private final byte[] address;
+  private final List<DataWord> topics ;
+  private final byte[] data ;
 
   public LogInfo(byte[] address, List<DataWord> topics, byte[] data) {
     this.address = (address != null) ? address : new byte[]{};
-    this.topics = (topics != null) ? topics : new ArrayList<DataWord>();
+    this.topics = (topics != null) ? topics : new ArrayList<>();
     this.data = (data != null) ? data : new byte[]{};
   }
 

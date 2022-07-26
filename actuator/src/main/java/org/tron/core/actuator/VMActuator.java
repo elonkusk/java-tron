@@ -187,9 +187,7 @@ public class VMActuator implements Actuator2 {
           long afterSpend = program.getEnergyLimitLeft().longValue() - saveCodeEnergy;
           if (afterSpend < 0) {
             if (null == result.getException()) {
-              result.setException(Program.Exception
-                  .notEnoughSpendEnergy("save just created contract code",
-                      saveCodeEnergy, program.getEnergyLimitLeft().longValue()));
+              result.setException(Program.Exception.notEnoughSpendEnergy("save just created contract code", saveCodeEnergy, program.getEnergyLimitLeft().longValue()));
             }
           } else {
             result.spendEnergy(saveCodeEnergy);
@@ -227,11 +225,9 @@ public class VMActuator implements Actuator2 {
           rootRepository.commit();
 
           if (logInfoTriggerParser != null) {
-            List<ContractTrigger> triggers = logInfoTriggerParser
-                .parseLogInfos(program.getResult().getLogInfoList(), rootRepository);
+            List<ContractTrigger> triggers = logInfoTriggerParser.parseLogInfos(program.getResult().getLogInfoList(), rootRepository);
             program.getResult().setTriggerList(triggers);
           }
-
         }
       } else {
         rootRepository.commit();
@@ -287,8 +283,7 @@ public class VMActuator implements Actuator2 {
 
   }
 
-  private void create()
-      throws ContractValidateException {
+  private void create() throws ContractValidateException {
     if (!rootRepository.getDynamicPropertiesStore().supportVM()) {
       throw new ContractValidateException("vm work is off, need to be opened by the committee");
     }
@@ -426,8 +421,7 @@ public class VMActuator implements Actuator2 {
    * **
    */
 
-  private void call()
-      throws ContractValidateException {
+  private void call() throws ContractValidateException {
 
     if (!rootRepository.getDynamicPropertiesStore().supportVM()) {
       logger.info("vm work is off, need to be opened by the committee");
@@ -529,8 +523,7 @@ public class VMActuator implements Actuator2 {
 
   }
 
-  public long getAccountEnergyLimitWithFixRatio(AccountCapsule account, long feeLimit,
-      long callValue) {
+  public long getAccountEnergyLimitWithFixRatio(AccountCapsule account, long feeLimit, long callValue) {
 
     long sunPerEnergy = VMConstant.SUN_PER_ENERGY;
     if (rootRepository.getDynamicPropertiesStore().getEnergyFee() > 0) {
@@ -550,8 +543,7 @@ public class VMActuator implements Actuator2 {
 
   }
 
-  private long getAccountEnergyLimitWithFloatRatio(AccountCapsule account, long feeLimit,
-      long callValue) {
+  private long getAccountEnergyLimitWithFloatRatio(AccountCapsule account, long feeLimit, long callValue) {
 
     long sunPerEnergy = VMConstant.SUN_PER_ENERGY;
     if (rootRepository.getDynamicPropertiesStore().getEnergyFee() > 0) {

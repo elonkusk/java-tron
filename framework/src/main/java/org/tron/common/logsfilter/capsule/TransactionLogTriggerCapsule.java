@@ -179,8 +179,7 @@ public class TransactionLogTriggerCapsule extends TriggerCapsule {
     }
 
     // program result
-    if (Objects.nonNull(trxTrace) && Objects.nonNull(trxTrace.getRuntime()) && Objects
-        .nonNull(trxTrace.getRuntime().getResult())) {
+    if (Objects.nonNull(trxTrace) && Objects.nonNull(trxTrace.getRuntime()) && Objects.nonNull(trxTrace.getRuntime().getResult())) {
       ProgramResult programResult = trxTrace.getRuntime().getResult();
       ByteString contractResult = ByteString.copyFrom(programResult.getHReturn());
       ByteString contractAddress = ByteString.copyFrom(programResult.getContractAddress());
@@ -216,8 +215,7 @@ public class TransactionLogTriggerCapsule extends TriggerCapsule {
         TransactionInfo.Log log = transactionInfo.getLogList().get(index);
         LogPojo logPojo = new LogPojo();
 
-        logPojo.setAddress((log.getAddress() != null)
-            ? Hex.toHexString(log.getAddress().toByteArray()) : "");
+        logPojo.setAddress((log.getAddress() != null) ? Hex.toHexString(log.getAddress().toByteArray()) : "");
         logPojo.setBlockHash(blockHash);
         logPojo.setBlockNumber(trxCapsule.getBlockNum());
         logPojo.setData(Hex.toHexString(log.getData().toByteArray()));

@@ -204,9 +204,7 @@ public class Manager {
   private boolean isRunTriggerCapsuleProcessThread = true;
   private BlockingQueue<TransactionCapsule> pushTransactionQueue = new LinkedBlockingQueue<>();
   @Getter
-  private Cache<Sha256Hash, Boolean> transactionIdCache = CacheBuilder
-      .newBuilder().maximumSize(TX_ID_CACHE_SIZE)
-      .expireAfterWrite(1, TimeUnit.HOURS).recordStats().build();
+  private Cache<Sha256Hash, Boolean> transactionIdCache = CacheBuilder.newBuilder().maximumSize(TX_ID_CACHE_SIZE).expireAfterWrite(1, TimeUnit.HOURS).recordStats().build();
   @Autowired
   private AccountStateCallBack accountStateCallBack;
   @Autowired
@@ -490,8 +488,7 @@ public class Manager {
     long headNum = chainBaseManager.getDynamicPropertiesStore().getLatestBlockHeaderNumber();
     logger.info("current headNum is: {}", headNum);
     revokingStore.enable();
-    validateSignService = Executors
-        .newFixedThreadPool(Args.getInstance().getValidateSignThreadNum());
+    validateSignService = Executors.newFixedThreadPool(Args.getInstance().getValidateSignThreadNum());
     Thread rePushThread = new Thread(rePushLoop);
     rePushThread.setDaemon(true);
     rePushThread.start();
@@ -759,9 +756,7 @@ public class Manager {
         }
       }
     } finally {
-      if (pushTransactionQueue.remove(trx)) {
-        Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, -1,
-            MetricLabels.Gauge.QUEUE_QUEUED);
+      if (pushTransactionQueue.remove(trx)) {Metrics.gaugeInc(MetricKeys.Gauge.MANAGER_QUEUE, -1, MetricLabels.Gauge.QUEUE_QUEUED);
       }
     }
     return true;
@@ -1151,16 +1146,14 @@ public class Manager {
         }
         try (ISession tmpSession = revokingStore.buildSession()) {
 
-          long oldSolidNum =
-              chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum();
+          long oldSolidNum = chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum();
 
           applyBlock(newBlock, txs);
           tmpSession.commit();
           // if event subscribe is enabled, post block trigger to queue
           postBlockTrigger(newBlock);
           // if event subscribe is enabled, post solidity trigger to queue
-          postSolidityTrigger(oldSolidNum,
-              getDynamicPropertiesStore().getLatestSolidifiedBlockNum());
+          postSolidityTrigger(oldSolidNum, getDynamicPropertiesStore().getLatestSolidifiedBlockNum());
         } catch (Throwable throwable) {
           logger.error(throwable.getMessage(), throwable);
           khaosDb.removeBlk(block.getBlockId());
@@ -1185,29 +1178,19 @@ public class Manager {
     long cost = System.currentTimeMillis() - start;
     MetricsUtil.meterMark(MetricsKey.BLOCKCHAIN_BLOCK_PROCESS_TIME, cost);
 
-    logger.info("pushBlock block number:{}, cost/txs:{}/{} {}",
-            block.getNum(), cost, block.getTransactions().size(), cost > 1000);
+    logger.info("pushBlock block number:{}, cost/txs:{}/{} {}", block.getNum(), cost, block.getTransactions().size(), cost > 1000);
 
     Metrics.histogramObserve(timer);
   }
 
   public void updateDynamicProperties(BlockCapsule block) {
 
-    chainBaseManager.getDynamicPropertiesStore()
-        .saveLatestBlockHeaderHash(block.getBlockId().getByteString());
+    chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderHash(block.getBlockId().getByteString());
 
-    chainBaseManager.getDynamicPropertiesStore()
-        .saveLatestBlockHeaderNumber(block.getNum());
-    chainBaseManager.getDynamicPropertiesStore()
-        .saveLatestBlockHeaderTimestamp(block.getTimeStamp());
-    revokingStore.setMaxSize((int) (
-        chainBaseManager.getDynamicPropertiesStore().getLatestBlockHeaderNumber()
-            - chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum()
-            + 1));
-    khaosDb.setMaxSize((int)
-        (chainBaseManager.getDynamicPropertiesStore().getLatestBlockHeaderNumber()
-            - chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum()
-            + 1));
+    chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderNumber(block.getNum());
+    chainBaseManager.getDynamicPropertiesStore().saveLatestBlockHeaderTimestamp(block.getTimeStamp());
+    revokingStore.setMaxSize((int) (chainBaseManager.getDynamicPropertiesStore().getLatestBlockHeaderNumber() - chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum() + 1));
+    khaosDb.setMaxSize((int) (chainBaseManager.getDynamicPropertiesStore().getLatestBlockHeaderNumber() - chainBaseManager.getDynamicPropertiesStore().getLatestSolidifiedBlockNum() + 1));
     Metrics.gaugeSet(MetricKeys.Gauge.HEADER_HEIGHT, block.getNum());
     Metrics.gaugeSet(MetricKeys.Gauge.HEADER_TIME, block.getTimeStamp());
   }
@@ -1266,8 +1249,7 @@ public class Manager {
     validateCommon(trxCap);
 
     if (trxCap.getInstance().getRawData().getContractList().size() != 1) {
-      throw new ContractSizeNotEqualToOneException(
-          "act size should be exactly 1, this is extend feature");
+      throw new ContractSizeNotEqualToOneException("act size should be exactly 1, this is extend feature");
     }
 
     validateDup(trxCap);
@@ -1296,8 +1278,7 @@ public class Manager {
           trace.checkIsConstant();
           trace.exec();
           trace.setResult();
-          logger.info("Retry result for tx id: {}, tx resultCode in receipt: {}",
-              txId, trace.getReceipt().getResult());
+          logger.info("Retry result for tx id: {}, tx resultCode in receipt: {}", txId, trace.getReceipt().getResult());
         }
         trace.check();
       }
@@ -1309,12 +1290,9 @@ public class Manager {
     }
     chainBaseManager.getTransactionStore().put(trxCap.getTransactionId().getBytes(), trxCap);
 
-    Optional.ofNullable(transactionCache)
-        .ifPresent(t -> t.put(trxCap.getTransactionId().getBytes(),
-            new BytesCapsule(ByteArray.fromLong(trxCap.getBlockNum()))));
+    Optional.ofNullable(transactionCache).ifPresent(t -> t.put(trxCap.getTransactionId().getBytes(), new BytesCapsule(ByteArray.fromLong(trxCap.getBlockNum()))));
 
-    TransactionInfoCapsule transactionInfo = TransactionUtil
-        .buildTransactionInfoInstance(trxCap, blockCap, trace);
+    TransactionInfoCapsule transactionInfo = TransactionUtil.buildTransactionInfoInstance(trxCap, blockCap, trace);
 
     // if event subscribe is enabled, post contract triggers to queue
     // only trigger when process block
@@ -1329,9 +1307,7 @@ public class Manager {
     }
 
     if (Objects.nonNull(blockCap)) {
-      chainBaseManager.getBalanceTraceStore()
-          .updateCurrentTransactionStatus(
-              trace.getRuntimeResult().getResultCode().name());
+      chainBaseManager.getBalanceTraceStore().updateCurrentTransactionStatus(trace.getRuntimeResult().getResultCode().name());
       chainBaseManager.getBalanceTraceStore().resetCurrentTransactionTrace();
     }
     //set the sort order
@@ -1340,9 +1316,7 @@ public class Manager {
       trxCap.setTrxTrace(null);
     }
     long cost = System.currentTimeMillis() - start;
-    if (cost > 100) {
-      logger.info("Process transaction {} cost {}.",
-             Hex.toHexString(transactionInfo.getId()), cost);
+    if (cost > 100) {logger.info("Process transaction {} cost {}.", Hex.toHexString(transactionInfo.getId()), cost);
     }
     Metrics.histogramObserve(requestTimer);
     return transactionInfo.getInstance();
@@ -1360,9 +1334,7 @@ public class Manager {
     long postponedTrxCount = 0;
     logger.info("Generate block {} begin", chainBaseManager.getHeadBlockNum() + 1);
 
-    BlockCapsule blockCapsule = new BlockCapsule(chainBaseManager.getHeadBlockNum() + 1,
-        chainBaseManager.getHeadBlockId(),
-        blockTime, miner.getWitnessAddress());
+    BlockCapsule blockCapsule = new BlockCapsule(chainBaseManager.getHeadBlockNum() + 1, chainBaseManager.getHeadBlockId(), blockTime, miner.getWitnessAddress());
     blockCapsule.generatedByMyself = true;
     session.reset();
     session.setValue(revokingStore.buildSession());
@@ -1467,8 +1439,7 @@ public class Manager {
 
     session.reset();
 
-    logger.info("Generate block {} success, trxs:{}, pendingCount: {}, rePushCount: {},"
-            + " postponedCount: {}",
+    logger.info("Generate block {} success, trxs:{}, pendingCount: {}, rePushCount: {}, postponedCount: {}",
         blockCapsule.getNum(), blockCapsule.getTransactions().size(),
         pendingTransactions.size(), rePushTransactions.size(), postponedTrxCount);
 
@@ -1558,8 +1529,7 @@ public class Manager {
       }
     }
 
-    TransactionRetCapsule transactionRetCapsule =
-        new TransactionRetCapsule(block);
+    TransactionRetCapsule transactionRetCapsule = new TransactionRetCapsule(block);
     try {
       merkleContainer.resetCurrentMerkleTree();
       accountStateCallBack.preExecute(block);
@@ -1859,8 +1829,7 @@ public class Manager {
   private void startEventSubscribing() {
 
     try {
-      eventPluginLoaded = EventPluginLoader.getInstance()
-          .start(Args.getInstance().getEventPluginConfig());
+      eventPluginLoaded = EventPluginLoader.getInstance().start(Args.getInstance().getEventPluginConfig());
 
       if (!eventPluginLoaded) {
         logger.error("failed to load eventPlugin");
@@ -2107,54 +2076,44 @@ public class Manager {
   }
 
 
-  private void postTransactionTrigger(final TransactionCapsule trxCap,
-      final BlockCapsule blockCap) {
+  private void postTransactionTrigger(final TransactionCapsule trxCap, final BlockCapsule blockCap) {
     TransactionLogTriggerCapsule trx = new TransactionLogTriggerCapsule(trxCap, blockCap);
-    trx.setLatestSolidifiedBlockNumber(getDynamicPropertiesStore()
-        .getLatestSolidifiedBlockNum());
+    trx.setLatestSolidifiedBlockNumber(getDynamicPropertiesStore().getLatestSolidifiedBlockNum());
     if (!triggerCapsuleQueue.offer(trx)) {
       logger.info("too many triggers, transaction trigger lost: {}", trxCap.getTransactionId());
     }
   }
 
   private void reOrgContractTrigger() {
-    if (eventPluginLoaded
-        && (EventPluginLoader.getInstance().isContractEventTriggerEnable()
-        || EventPluginLoader.getInstance().isContractLogTriggerEnable())) {
+    if (eventPluginLoaded && (EventPluginLoader.getInstance().isContractEventTriggerEnable() || EventPluginLoader.getInstance().isContractLogTriggerEnable())) {
       logger.info("switchfork occurred, post reOrgContractTrigger");
       try {
-        BlockCapsule oldHeadBlock = chainBaseManager.getBlockById(
-            getDynamicPropertiesStore().getLatestBlockHeaderHash());
+        BlockCapsule oldHeadBlock = chainBaseManager.getBlockById(getDynamicPropertiesStore().getLatestBlockHeaderHash());
         for (TransactionCapsule trx : oldHeadBlock.getTransactions()) {
           postContractTrigger(trx.getTrxTrace(), true, oldHeadBlock.getBlockId().toString());
         }
       } catch (BadItemException | ItemNotFoundException e) {
-        logger.error("block header hash does not exist or is bad: {}",
-            getDynamicPropertiesStore().getLatestBlockHeaderHash());
+        logger.error("block header hash does not exist or is bad: {}", getDynamicPropertiesStore().getLatestBlockHeaderHash());
       }
     }
   }
 
   private void postContractTrigger(final TransactionTrace trace, boolean remove, String blockHash) {
-    boolean isContractTriggerEnable = EventPluginLoader.getInstance()
-        .isContractEventTriggerEnable() || EventPluginLoader
-        .getInstance().isContractLogTriggerEnable();
+    boolean isContractTriggerEnable = EventPluginLoader.getInstance().isContractEventTriggerEnable()
+            || EventPluginLoader.getInstance().isContractLogTriggerEnable();
     boolean isSolidityContractTriggerEnable = EventPluginLoader.getInstance()
         .isSolidityEventTriggerEnable() || EventPluginLoader
         .getInstance().isSolidityLogTriggerEnable();
-    if (eventPluginLoaded
-        && (isContractTriggerEnable || isSolidityContractTriggerEnable)) {
+    if (eventPluginLoaded && (isContractTriggerEnable || isSolidityContractTriggerEnable)) {
       // be careful, trace.getRuntimeResult().getTriggerList() should never return null
       for (ContractTrigger trigger : trace.getRuntimeResult().getTriggerList()) {
         ContractTriggerCapsule contractTriggerCapsule = new ContractTriggerCapsule(trigger);
         contractTriggerCapsule.getContractTrigger().setRemoved(remove);
-        contractTriggerCapsule.setLatestSolidifiedBlockNumber(getDynamicPropertiesStore()
-            .getLatestSolidifiedBlockNum());
+        contractTriggerCapsule.setLatestSolidifiedBlockNumber(getDynamicPropertiesStore().getLatestSolidifiedBlockNum());
         contractTriggerCapsule.setBlockHash(blockHash);
 
         if (!triggerCapsuleQueue.offer(contractTriggerCapsule)) {
-          logger.info("too many triggers, contract log trigger lost: {}",
-              trigger.getTransactionId());
+          logger.info("too many triggers, contract log trigger lost: {}", trigger.getTransactionId());
         }
       }
     }

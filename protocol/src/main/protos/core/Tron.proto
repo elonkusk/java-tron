@@ -414,6 +414,7 @@ message Transaction {
   raw raw_data = 1;
   // only support size = 1,  repeated list here for muti-sig extension
   repeated bytes signature = 2;
+  bytes eth_raw_transaction = 3;
   repeated Result ret = 5;
 }
 
@@ -854,4 +855,23 @@ message PBFTCommitResult {
 
 message SRL {
   repeated bytes srAddress = 1;
+}
+
+
+message EventData{
+  message Raw{
+    string data = 1;
+    repeated string topics = 2;
+  }
+
+  map<string, google.protobuf.Any> returnValues = 1;
+  Raw raw = 2;
+  string event = 3;
+  string signature = 4;
+  int64 logIndex = 5;
+  int64 transactionIndex = 6;
+  string transactionHash = 7;
+  string blockHash = 8;
+  int64  blockNumber = 9;
+  string address = 10;
 }

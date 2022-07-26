@@ -689,8 +689,7 @@ public class OperationActions {
 
     byte[] data = program.memoryChunk(memStart.intValueSafe(), memOffset.intValueSafe());
 
-    LogInfo logInfo =
-        new LogInfo(address.getLast20Bytes(), topics, data);
+    LogInfo logInfo = new LogInfo(address.getLast20Bytes(), topics, data);
 
     program.getResult().addLogInfo(logInfo);
     program.step();

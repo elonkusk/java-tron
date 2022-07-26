@@ -1,4 +1,4 @@
-package org.tron.common.logsfilter;
+package org.tron.common.logsfilter.listener;
 
 import org.pf4j.ExtensionPoint;
 

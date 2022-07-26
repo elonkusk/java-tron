@@ -176,8 +176,7 @@ public class TransactionTrace {
     receipt.addNetFee(netFee);
   }
 
-  public void exec()
-      throws ContractExeException, ContractValidateException, VMIllegalException {
+  public void exec() throws ContractExeException, ContractValidateException, VMIllegalException {
     /*  VM execute  */
     runtime.execute(transactionContext);
     setBill(transactionContext.getProgramResult().getEnergyUsed());

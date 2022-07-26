@@ -2716,18 +2716,19 @@ public class Wallet {
 
   public SmartContract getContract(GrpcAPI.BytesMessage bytesMessage) {
     byte[] address = bytesMessage.getValue().toByteArray();
-    AccountCapsule accountCapsule = chainBaseManager.getAccountStore().get(address);
-    if (accountCapsule == null) {
-      logger.error("Get contract failed, the account does not exist or the account " + "does not have a code hash!");
-      return null;
-    }
+
+    //@TODO review
+//    AccountCapsule accountCapsule = chainBaseManager.getAccountStore().get(address);
+//    if (accountCapsule == null) {
+//      logger.error("Get contract failed, the account does not exist or the account does not have a code hash!");
+//      return null;
+//    }
 
     ContractCapsule contractCapsule = chainBaseManager.getContractStore().get(address);
     if (Objects.nonNull(contractCapsule)) {
       AbiCapsule abiCapsule = chainBaseManager.getAbiStore().get(address);
       if (abiCapsule != null && abiCapsule.getInstance() != null) {
-        contractCapsule = new ContractCapsule(
-            contractCapsule.getInstance().toBuilder().setAbi(abiCapsule.getInstance()).build());
+        contractCapsule = new ContractCapsule(contractCapsule.getInstance().toBuilder().setAbi(abiCapsule.getInstance()).build());
       }
       return contractCapsule.getInstance();
     }

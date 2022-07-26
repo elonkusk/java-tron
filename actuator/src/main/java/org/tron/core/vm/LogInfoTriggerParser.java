@@ -47,14 +47,14 @@ public class LogInfoTriggerParser {
       }
       builder.append(param.getType());
     }
-    signature += builder.toString() + ")";
+    signature += builder + ")";
     return signature;
   }
 
   public List<ContractTrigger> parseLogInfos(List<LogInfo> logInfos, Repository deposit) {
 
     List<ContractTrigger> list = new LinkedList<>();
-    if (logInfos == null || logInfos.size() <= 0) {
+    if (logInfos == null || logInfos.isEmpty()) {
       return list;
     }
 
@@ -64,8 +64,7 @@ public class LogInfoTriggerParser {
     for (LogInfo logInfo : logInfos) {
 
       byte[] contractAddress = TransactionTrace.convertToTronAddress(logInfo.getAddress());
-      String strContractAddr =
-          ArrayUtils.isEmpty(contractAddress) ? "" : StringUtil.encode58Check(contractAddress);
+      String strContractAddr = ArrayUtils.isEmpty(contractAddress) ? "" : StringUtil.encode58Check(contractAddress);
       if (addrMap.get(strContractAddr) != null) {
         continue;
       }
@@ -76,17 +75,14 @@ public class LogInfoTriggerParser {
         abiMap.put(strContractAddr, ABI.getDefaultInstance());
         continue;
       }
-      AbiCapsule abiCapsule = StoreFactory.getInstance().getChainBaseManager()
-          .getAbiStore().get(contractAddress);
+      AbiCapsule abiCapsule = StoreFactory.getInstance().getChainBaseManager().getAbiStore().get(contractAddress);
       ABI abi;
       if (abiCapsule == null || abiCapsule.getInstance() == null) {
         abi = ABI.getDefaultInstance();
       } else {
         abi = abiCapsule.getInstance();
       }
-      String creatorAddr = StringUtil.encode58Check(
-          TransactionTrace
-              .convertToTronAddress(contract.getInstance().getOriginAddress().toByteArray()));
+      String creatorAddr = StringUtil.encode58Check(TransactionTrace.convertToTronAddress(contract.getInstance().getOriginAddress().toByteArray()));
       addrMap.put(strContractAddr, creatorAddr);
       abiMap.put(strContractAddr, abi);
     }
@@ -95,8 +91,7 @@ public class LogInfoTriggerParser {
     for (LogInfo logInfo : logInfos) {
 
       byte[] contractAddress = TransactionTrace.convertToTronAddress(logInfo.getAddress());
-      String strContractAddr =
-          ArrayUtils.isEmpty(contractAddress) ? "" : StringUtil.encode58Check(contractAddress);
+      String strContractAddr = ArrayUtils.isEmpty(contractAddress) ? "" : StringUtil.encode58Check(contractAddress);
       ABI abi = abiMap.get(strContractAddr);
       ContractTrigger event = new ContractTrigger();
       String creatorAddr = addrMap.get(strContractAddr);

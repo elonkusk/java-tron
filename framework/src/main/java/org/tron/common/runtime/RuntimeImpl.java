@@ -37,8 +37,7 @@ public class RuntimeImpl implements Runtime {
   private Actuator2 actuator2 = null;
 
   @Override
-  public void execute(TransactionContext context)
-      throws ContractValidateException, ContractExeException {
+  public void execute(TransactionContext context) throws ContractValidateException, ContractExeException {
     this.context = context;
 
     ContractType contractType = context.getTrxCap().getInstance().getRawData().getContract(0).getType();
@@ -63,9 +62,7 @@ public class RuntimeImpl implements Runtime {
         act.execute(context.getProgramResult().getRet());
       }
     }
-
     setResultCode(context.getProgramResult());
-
   }
 
   @Override

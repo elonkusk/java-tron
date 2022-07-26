@@ -1261,8 +1261,7 @@ public class Program {
           oneLine.append(ByteUtil.oneByteToHexString(value)).append(" ");
 
           if ((i + 1) % 16 == 0) {
-            String tmp = format("[%4s]-[%4s]", Integer.toString(i - 15, 16),
-                Integer.toString(i, 16)).replace(" ", "0");
+            String tmp = format("[%4s]-[%4s]", Integer.toString(i - 15, 16), Integer.toString(i, 16)).replace(" ", "0");
             memoryData.append("").append(tmp).append(" ");
             memoryData.append(oneLine);
             if (i < memory.size()) {
@@ -1285,7 +1284,7 @@ public class Program {
         if (i != pc) {
           opsString.append(tmpString);
         } else {
-          opsString.append(" >>").append(tmpString).append("");
+          opsString.append(" >>").append(tmpString);
         }
 
       }
@@ -1318,8 +1317,7 @@ public class Program {
       globalOutput.append(" -- MEMORY --  ").append(memoryData).append("\n");
 
       if (getResult().getHReturn() != null) {
-        globalOutput.append("\n  HReturn: ").append(
-            Hex.toHexString(getResult().getHReturn()));
+        globalOutput.append("\n  HReturn: ").append(Hex.toHexString(getResult().getHReturn()));
       }
 
       // sophisticated assumption that msg.data != codedata
@@ -1646,10 +1644,8 @@ public class Program {
     FreezeBalanceParam param = new FreezeBalanceParam();
     param.setOwnerAddress(owner);
     param.setReceiverAddress(receiver);
-    boolean needCheckFrozenTime = CommonParameter.getInstance()
-        .getCheckFrozenTime() == 1; // for test
-    param.setFrozenDuration(needCheckFrozenTime
-        ? repository.getDynamicPropertiesStore().getMinFrozenTime() : 0);
+    boolean needCheckFrozenTime = CommonParameter.getInstance().getCheckFrozenTime() == 1; // for test
+    param.setFrozenDuration(needCheckFrozenTime ? repository.getDynamicPropertiesStore().getMinFrozenTime() : 0);
     param.setResourceType(parseResourceCode(resourceType));
     try {
       FreezeBalanceProcessor processor = new FreezeBalanceProcessor();
@@ -1675,8 +1671,7 @@ public class Program {
     byte[] receiver = receiverAddress.toTronAddress();
 
     increaseNonce();
-    InternalTransaction internalTx = addInternalTx(null, owner, receiver, 0, null,
-        "unfreezeFor" + convertResourceToString(resourceType), nonce, null);
+    InternalTransaction internalTx = addInternalTx(null, owner, receiver, 0, null, "unfreezeFor" + convertResourceToString(resourceType), nonce, null);
 
     UnfreezeBalanceParam param = new UnfreezeBalanceParam();
     param.setOwnerAddress(owner);
